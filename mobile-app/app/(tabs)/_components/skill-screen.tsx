@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { RefreshControlProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const palette = {
@@ -20,13 +21,15 @@ type SkillScreenProps = {
   title: string;
   subtitle: string;
   children: ReactNode;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 };
 
-export function SkillScreen({ children, eyebrow, subtitle, title }: SkillScreenProps) {
+export function SkillScreen({ children, eyebrow, subtitle, title, refreshControl }: SkillScreenProps) {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.content}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}>
         <View style={styles.header}>
@@ -58,40 +61,18 @@ export function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: palette.background,
-    flex: 1,
-  },
-  scrollView: {
-    backgroundColor: palette.background,
-  },
-  content: {
-    gap: 18,
-    paddingBottom: 34,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  header: {
-    gap: 8,
-  },
+  safeArea: { backgroundColor: palette.background, flex: 1 },
+  scrollView: { backgroundColor: palette.background },
+  content: { gap: 18, paddingBottom: 34, paddingHorizontal: 20, paddingTop: 20 },
+  header: { gap: 8 },
   eyebrow: {
     color: palette.accent,
     fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0,
     textTransform: 'uppercase',
   },
-  title: {
-    color: palette.text,
-    fontSize: 32,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: palette.muted,
-    fontSize: 16,
-    lineHeight: 23,
-  },
+  title: { color: palette.text, fontSize: 32, fontWeight: '900' },
+  subtitle: { color: palette.muted, fontSize: 16, lineHeight: 23 },
   card: {
     backgroundColor: palette.card,
     borderColor: palette.border,
@@ -99,23 +80,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 18,
   },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 19,
-    fontWeight: '800',
-  },
-  metric: {
-    flex: 1,
-    gap: 4,
-  },
-  metricValue: {
-    color: palette.text,
-    fontSize: 25,
-    fontWeight: '900',
-  },
-  metricLabel: {
-    color: palette.mutedDark,
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  sectionTitle: { color: palette.text, fontSize: 19, fontWeight: '800' },
+  metric: { flex: 1, gap: 4 },
+  metricValue: { color: palette.text, fontSize: 25, fontWeight: '900' },
+  metricLabel: { color: palette.mutedDark, fontSize: 13, fontWeight: '700' },
 });

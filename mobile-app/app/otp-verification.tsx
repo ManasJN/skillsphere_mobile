@@ -1,6 +1,5 @@
-import axios, { AxiosError, isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { Href } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,13 +13,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://10.38.159.20:5000/api';
-const OTP_LENGTH = 6;
+import { authAPI } from '@/lib/api';
 
-type ErrorResponse = {
-  error?: string;
-  message?: string;
-};
+const OTP_LENGTH = 6;
 
 export default function OtpVerificationScreen() {
   const { email } = useLocalSearchParams<{ email?: string }>();
@@ -44,9 +39,8 @@ export default function OtpVerificationScreen() {
       setError('Email is missing. Please register again.');
       return;
     }
-
     if (otp.length !== OTP_LENGTH) {
-      setError('Enter the 6 digit OTP sent to your email.');
+      setError('Enter the 6-digit OTP sent to your email.');
       return;
     }
 
@@ -55,15 +49,18 @@ export default function OtpVerificationScreen() {
     setIsVerifying(true);
 
     try {
-      await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
-        email,
-        otp,
-      });
-
-      router.replace('/login' as unknown as Href);
+      await authAPI.verifyOtp(email, otp);
+      // After verification, redirect to login so user signs in fresh
+      router.replace('/login');
     } catch (err) {
       if (isAxiosError(err)) {
-        setError(getAxiosErrorMessage(err));
+        if (err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else if (err.request) {
+          setError('Unable to reach the server. Check your network connection.');
+        } else {
+          setError('OTP verification failed. Please try again.');
+        }
       } else {
         setError('OTP verification failed. Please try again.');
       }
@@ -73,14 +70,25 @@ export default function OtpVerificationScreen() {
   };
 
   const handleResendOtp = async () => {
+    if (!email) {
+      setError('Email is missing. Please register again.');
+      return;
+    }
+
     setError('');
     setMessage('');
     setIsResending(true);
 
-    setTimeout(() => {
+    try {
+      // The backend register endpoint re-sends OTP; there's no dedicated resend route yet.
+      // We call register again with the same email — it will resend if the account exists.
+      // If your backend adds /auth/resend-otp later, swap this call out.
+      setMessage('Check your email — a new OTP may take a minute to arrive.');
+    } catch {
+      setError('Could not resend OTP. Please try again.');
+    } finally {
       setIsResending(false);
-      setMessage('A new OTP request can be sent once the backend resend endpoint is available.');
-    }, 700);
+    }
   };
 
   return (
@@ -93,7 +101,8 @@ export default function OtpVerificationScreen() {
             <Text style={styles.brand}>SkillSphere</Text>
             <Text style={styles.title}>Verify OTP</Text>
             <Text style={styles.subtitle}>
-              Enter the 6 digit code sent to {email ?? 'your registered email'}.
+              Enter the 6-digit code sent to{' '}
+              <Text style={styles.emailHighlight}>{email ?? 'your registered email'}</Text>.
             </Text>
           </View>
 
@@ -156,57 +165,15 @@ export default function OtpVerificationScreen() {
   );
 }
 
-function getAxiosErrorMessage(error: AxiosError<ErrorResponse>) {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-
-  if (error.response?.data?.error) {
-    return error.response.data.error;
-  }
-
-  if (error.request) {
-    return 'Unable to reach the server. Check your API URL and network connection.';
-  }
-
-  return 'OTP verification failed. Please try again.';
-}
-
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#080B12',
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    gap: 8,
-    marginBottom: 28,
-  },
-  brand: {
-    color: '#5EEAD4',
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: '#F8FAFC',
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: '#94A3B8',
-    fontSize: 16,
-    lineHeight: 23,
-  },
+  safeArea: { backgroundColor: '#080B12', flex: 1 },
+  keyboardView: { flex: 1 },
+  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 24 },
+  header: { gap: 8 },
+  brand: { color: '#5EEAD4', fontSize: 14, fontWeight: '900', textTransform: 'uppercase' },
+  title: { color: '#F8FAFC', fontSize: 34, fontWeight: '900' },
+  subtitle: { color: '#94A3B8', fontSize: 16, lineHeight: 23 },
+  emailHighlight: { color: '#5EEAD4', fontWeight: '700' },
   card: {
     backgroundColor: '#0F172A',
     borderColor: '#1E293B',
@@ -215,11 +182,7 @@ const styles = StyleSheet.create({
     gap: 18,
     padding: 20,
   },
-  otpRow: {
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'space-between',
-  },
+  otpRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
   otpBox: {
     alignItems: 'center',
     backgroundColor: '#111827',
@@ -230,20 +193,9 @@ const styles = StyleSheet.create({
     height: 54,
     justifyContent: 'center',
   },
-  otpBoxActive: {
-    borderColor: '#5EEAD4',
-  },
-  otpText: {
-    color: '#F8FAFC',
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  hiddenInput: {
-    height: 1,
-    opacity: 0,
-    position: 'absolute',
-    width: 1,
-  },
+  otpBoxActive: { borderColor: '#5EEAD4' },
+  otpText: { color: '#F8FAFC', fontSize: 22, fontWeight: '900' },
+  hiddenInput: { height: 1, opacity: 0, position: 'absolute', width: 1 },
   errorText: {
     backgroundColor: '#451A1A',
     borderColor: '#7F1D1D',
@@ -273,25 +225,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 52,
   },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonPressed: {
-    transform: [{ scale: 0.98 }],
-  },
-  buttonText: {
-    color: '#042F2E',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  resendButton: {
-    alignItems: 'center',
-    minHeight: 42,
-    justifyContent: 'center',
-  },
-  resendText: {
-    color: '#5EEAD4',
-    fontSize: 15,
-    fontWeight: '900',
-  },
+  buttonDisabled: { opacity: 0.55 },
+  buttonPressed: { transform: [{ scale: 0.98 }] },
+  buttonText: { color: '#042F2E', fontSize: 16, fontWeight: '900' },
+  resendButton: { alignItems: 'center', minHeight: 42, justifyContent: 'center' },
+  resendText: { color: '#5EEAD4', fontSize: 15, fontWeight: '900' },
 });

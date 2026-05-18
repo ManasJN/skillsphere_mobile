@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, { AxiosError, isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -14,19 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_BASE_URL = 'http://10.38.159.20:5000/api';
-const TOKEN_STORAGE_KEY = 'skillsphere_jwt_token';
-
-type LoginResponse = {
-  accessToken?: string;
-  jwt?: string;
-  token?: string;
-};
-
-type ErrorResponse = {
-  error?: string;
-  message?: string;
-};
+import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -46,15 +34,13 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post<LoginResponse>(`${API_BASE_URL}/auth/login`, {
-        email: email.trim(),
-        password,
-      });
+      const response = await authAPI.login(email.trim().toLowerCase(), password);
 
+      // Backend returns { success, token, refreshToken, user }
       const token = response.data.token ?? response.data.accessToken ?? response.data.jwt;
 
       if (!token) {
-        setError('Login succeeded, but no token was returned.');
+        setError('Login succeeded but no token was returned. Contact support.');
         return;
       }
 
@@ -62,7 +48,17 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (err) {
       if (isAxiosError(err)) {
-        setError(getAxiosErrorMessage(err));
+        if (err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else if (err.response?.status === 401) {
+          setError('Invalid email or password.');
+        } else if (err.request) {
+          setError(
+            'Unable to reach the server. Make sure the backend is running and your device is on the same Wi-Fi network.',
+          );
+        } else {
+          setError('Login failed. Please try again.');
+        }
       } else {
         setError('Something went wrong. Please try again.');
       }
@@ -132,30 +128,17 @@ export default function LoginScreen() {
               )}
             </Pressable>
           </View>
+
+          <Pressable onPress={() => router.push('/register')} style={styles.signupLink}>
+            <Text style={styles.signupText}>
+              Don&apos;t have an account?{' '}
+              <Text style={styles.signupHighlight}>Sign up</Text>
+            </Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function getAxiosErrorMessage(error: AxiosError<ErrorResponse>) {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-
-  if (error.response?.data?.error) {
-    return error.response.data.error;
-  }
-
-  if (error.response?.status === 401) {
-    return 'Invalid email or password.';
-  }
-
-  if (error.request) {
-    return 'Unable to reach the server. Check your API URL and network connection.';
-  }
-
-  return 'Login failed. Please try again.';
 }
 
 const styles = StyleSheet.create({
@@ -170,23 +153,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 24,
+    gap: 20,
   },
   header: {
     gap: 8,
-    marginBottom: 34,
   },
   brand: {
     color: '#5EEAD4',
     fontSize: 14,
     fontWeight: '900',
-    letterSpacing: 0,
     textTransform: 'uppercase',
   },
   title: {
     color: '#F8FAFC',
     fontSize: 34,
     fontWeight: '900',
-    letterSpacing: 0,
   },
   subtitle: {
     color: '#94A3B8',
@@ -246,6 +227,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#042F2E',
     fontSize: 16,
+    fontWeight: '900',
+  },
+  signupLink: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  signupText: {
+    color: '#64748B',
+    fontSize: 15,
+  },
+  signupHighlight: {
+    color: '#5EEAD4',
     fontWeight: '900',
   },
 });
