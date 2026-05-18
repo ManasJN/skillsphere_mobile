@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body {
+    background: #030b1d;
+    color: #f8fafc;
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #253552; border-radius: 0; }
+  ::selection { background: rgba(79,70,229,.25); }
+}
+
+/* Optional light theme — toggle via document.documentElement.dataset.theme = 'light' */
+html[data-theme='light'] body {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+html[data-theme='light'] .card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+html[data-theme='light'] .card-sm {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+html[data-theme='light'] .section-title {
+  color: #0f172a;
+}
+html[data-theme='light'] .input {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+@layer components {
+  .card {
+    @apply bg-[#10192f] border border-[#1e293b] p-5;
+  }
+  .card-sm {
+    @apply bg-[#0b1630] border border-[#253552] p-4;
+  }
+  .card-offset {
+    @apply mt-1;
+  }
+  .btn-primary {
+    @apply bg-[#4f46e5] text-white font-semibold
+           px-4 py-2 text-sm transition-all duration-150
+           hover:bg-[#4338ca] active:opacity-90 cursor-pointer border-0;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-[#94a3b8] border border-[#253552] font-semibold
+           px-4 py-2 text-sm transition-all duration-150
+           hover:bg-[#0b1630] hover:text-[#f8fafc] cursor-pointer;
+  }
+  .input {
+    @apply w-full bg-[#030b1d] border border-[#1e293b] px-4 py-2.5
+           text-sm text-[#f8fafc] font-[Space_Grotesk] outline-none
+           focus:border-[#4f46e5] transition-colors duration-150
+           placeholder:text-[#64748b];
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold;
+  }
+  .nav-item {
+    @apply flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#94a3b8]
+           cursor-pointer transition-all duration-150
+           hover:bg-[#10192f] hover:text-[#f8fafc] border-l-2 border-transparent;
+  }
+  .nav-item.active {
+    @apply bg-[#10192f] text-[#f8fafc] border-l-[#4f46e5] text-[#93c5fd];
+  }
+  .progress-bar {
+    @apply h-1.5 bg-[#1e293b] overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full transition-all duration-700 ease-out;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-[#f8fafc];
+  }
+  .section-label {
+    @apply text-[11px] text-[#64748b] uppercase tracking-wide font-semibold mb-3;
+  }
+  .stat-card {
+    @apply card relative;
+  }
+  .page-intro {
+    @apply text-sm text-[#94a3b8] mb-5 max-w-2xl leading-relaxed;
+  }
+}
