@@ -1,19 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { notificationsAPI } from '@/lib/api';
-import { Card, SectionTitle, SkillScreen, palette } from './_components/skill-screen';
+import { Colors, Radius, Typography } from '@/lib/theme';
+import { Badge, Card, EmptyState, Row } from '@/components/ui';
 
 type Notification = {
-  _id: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
+  _id: string; title: string; message: string; isRead: boolean;
+  createdAt: string; type?: string;
 };
 
+function formatRelative(d: string) {
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function typeColor(type?: string): Parameters<typeof Badge>[0]['color'] {
+  return ({
+    achievement: 'teal', goal: 'indigo', system: 'muted', event: 'amber', mentor: 'blue',
+  } as const)[type ?? ''] ?? 'muted';
+}
+
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -22,147 +45,148 @@ export default function NotificationsScreen() {
     setError('');
     try {
       const res = await notificationsAPI.getMine();
-      setNotifications(res.data.data ?? res.data ?? []);
-    } catch {
-      setError('Could not load notifications. Pull to refresh.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      setItems(res.data.data ?? res.data ?? []);
+    } catch { setError('Could not load notifications.'); }
+    finally { setLoading(false); setRefreshing(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
   const onRefresh = () => { setRefreshing(true); load(); };
+
+  const unread = items.filter(n => !n.isRead);
 
   const markAllRead = async () => {
     try {
       await notificationsAPI.markAllRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setItems(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch { /* silent */ }
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
   return (
-    <SkillScreen
-      eyebrow="Notifications"
-      subtitle="Stay current on deadlines, mentor feedback, and cohort activity."
-      title="Updates"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#5EEAD4" colors={['#5EEAD4']} />
-      }>
-      {loading ? (
-        <Card>
-          <ActivityIndicator color="#5EEAD4" />
-          <Text style={styles.muted}>Loading notifications…</Text>
-        </Card>
-      ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
-      ) : (
-        <>
-          {unreadCount > 0 && (
-            <Card>
-              <View style={styles.summaryRow}>
-                <View>
-                  <Text style={styles.summaryTitle}>{unreadCount} unread</Text>
-                  <Text style={styles.muted}>Tap below to view details</Text>
-                </View>
-                <Pressable onPress={markAllRead} style={styles.markBtn}>
-                  <Text style={styles.markBtnText}>Mark all read</Text>
-                </Pressable>
-              </View>
-            </Card>
-          )}
+    <SafeAreaView edges={['top']} style={styles.safe}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl colors={[Colors.accent]} onRefresh={onRefresh} refreshing={refreshing} tintColor={Colors.accent} />
+        }
+        showsVerticalScrollIndicator={false}>
 
-          <View style={styles.section}>
-            <SectionTitle>Recent</SectionTitle>
-            {notifications.length === 0 ? (
-              <Text style={styles.muted}>No notifications yet.</Text>
-            ) : (
-              notifications.map((notif) => (
-                <View key={notif._id} style={[styles.notification, !notif.isRead && styles.unread]}>
-                  {!notif.isRead && <View style={styles.dot} />}
-                  <View style={styles.notificationCopy}>
-                    <View style={styles.notificationHeader}>
-                      <Text style={styles.notificationTitle}>{notif.title}</Text>
-                      <Text style={styles.notificationTime}>{formatRelative(notif.createdAt)}</Text>
-                    </View>
-                    <Text style={styles.notificationBody}>{notif.message}</Text>
-                  </View>
-                </View>
-              ))
-            )}
+        {/* Header */}
+        <Row style={styles.headerRow}>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={styles.eyebrow}>Activity</Text>
+            <Text style={styles.title}>Notifications</Text>
           </View>
-        </>
-      )}
-    </SkillScreen>
+          {unread.length > 0 && (
+            <Pressable onPress={markAllRead} style={styles.markAllBtn} hitSlop={10}>
+              <Text style={styles.markAllText}>Mark all read</Text>
+            </Pressable>
+          )}
+        </Row>
+
+        {/* Unread count badge */}
+        {unread.length > 0 && (
+          <View style={styles.unreadBanner}>
+            <View style={styles.unreadDot} />
+            <Text style={styles.unreadText}>
+              {unread.length} unread notification{unread.length > 1 ? 's' : ''}
+            </Text>
+          </View>
+        )}
+
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color={Colors.accent} size="large" />
+            <Text style={styles.loadingText}>Fetching updates…</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorBox}><Text style={styles.errorMsg}>{error}</Text></View>
+        ) : items.length === 0 ? (
+          <Card>
+            <EmptyState
+              title="All caught up"
+              body="You'll see goal updates, achievements, and announcements here."
+            />
+          </Card>
+        ) : (
+          <Card style={styles.listCard}>
+            {items.map((notif, i) => (
+              <View key={notif._id}>
+                {i > 0 && <View style={styles.divider} />}
+                <NotifRow notif={notif} />
+              </View>
+            ))}
+          </Card>
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function formatRelative(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+function NotifRow({ notif }: { notif: Notification }) {
+  return (
+    <View style={[rowStyles.wrap, !notif.isRead && rowStyles.unread]}>
+      {!notif.isRead && <View style={rowStyles.dot} />}
+      <View style={rowStyles.body}>
+        <Row style={rowStyles.top}>
+          <Text style={rowStyles.title} numberOfLines={1}>{notif.title}</Text>
+          <Text style={rowStyles.time}>{formatRelative(notif.createdAt)}</Text>
+        </Row>
+        <Text style={rowStyles.message} numberOfLines={3}>{notif.message}</Text>
+        {notif.type && (
+          <Badge label={notif.type} color={typeColor(notif.type)} />
+        )}
+      </View>
+    </View>
+  );
 }
 
-const styles = StyleSheet.create({
-  section: { gap: 10 },
-  summaryRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+const rowStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row', gap: 12, padding: 16, paddingLeft: 20,
   },
-  summaryTitle: { color: palette.text, fontSize: 20, fontWeight: '900' },
-  markBtn: {
-    backgroundColor: '#134E4A',
-    borderColor: '#5EEAD4',
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  markBtnText: { color: '#5EEAD4', fontSize: 12, fontWeight: '900' },
-  notification: {
-    alignItems: 'flex-start',
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-    padding: 14,
-  },
-  unread: { borderColor: '#1E4A60' },
+  unread: { backgroundColor: '#0A1018' },
   dot: {
-    backgroundColor: palette.accent,
-    borderRadius: 6,
-    height: 12,
-    marginTop: 4,
-    width: 12,
+    backgroundColor: Colors.accent, borderRadius: Radius.full,
+    height: 8, marginTop: 6, position: 'absolute', left: 8, width: 8,
   },
-  notificationCopy: { flex: 1, gap: 6 },
-  notificationHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'space-between',
+  body: { flex: 1, gap: 6 },
+  top: { gap: 8, justifyContent: 'space-between', alignItems: 'flex-start' },
+  title: { ...Typography.uiSm, color: Colors.text0, flex: 1, lineHeight: 19 },
+  time: { ...Typography.bodySm, color: Colors.text3, marginTop: 1 },
+  message: { ...Typography.bodySm, color: Colors.text2, lineHeight: 19 },
+});
+
+const styles = StyleSheet.create({
+  safe: { backgroundColor: Colors.bg1, flex: 1 },
+  content: { gap: 14, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 20 },
+
+  headerRow: { justifyContent: 'space-between', alignItems: 'flex-end' },
+  eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
+  title: { color: Colors.text0, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
+  markAllBtn: {
+    backgroundColor: Colors.accentDim, borderColor: '#1A4A40', borderRadius: Radius.full,
+    borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6,
   },
-  notificationTitle: { color: palette.text, flex: 1, fontSize: 15, fontWeight: '900' },
-  notificationTime: { color: palette.mutedDark, fontSize: 12, fontWeight: '800' },
-  notificationBody: { color: palette.muted, fontSize: 14, lineHeight: 20 },
-  muted: { color: palette.muted, fontSize: 14, paddingVertical: 6 },
-  errorText: {
-    backgroundColor: '#451A1A',
-    borderColor: '#7F1D1D',
-    borderRadius: 8,
-    borderWidth: 1,
-    color: '#FCA5A5',
-    fontSize: 14,
-    fontWeight: '700',
-    padding: 12,
+  markAllText: { ...Typography.bodySm, color: Colors.accentText, fontWeight: '600' },
+
+  unreadBanner: {
+    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: '#1A4A40',
+    borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: 10,
   },
+  unreadDot: { backgroundColor: Colors.accent, borderRadius: 5, height: 10, width: 10 },
+  unreadText: { ...Typography.uiSm, color: Colors.accentText },
+
+  loadingWrap: { alignItems: 'center', gap: 14, paddingVertical: 60 },
+  loadingText: { ...Typography.body, color: Colors.text3 },
+
+  errorBox: {
+    backgroundColor: '#1C0000', borderColor: '#4C0519', borderRadius: Radius.sm,
+    borderWidth: 1, padding: 16,
+  },
+  errorMsg: { ...Typography.bodySm, color: Colors.danger, textAlign: 'center' },
+
+  listCard: { gap: 0, padding: 0, overflow: 'hidden' },
+  divider: { backgroundColor: Colors.border0, height: 1 },
 });

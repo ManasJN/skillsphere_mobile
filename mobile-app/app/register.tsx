@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authAPI } from '@/lib/api';
+import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
 
 type Role = 'student' | 'faculty';
 
@@ -22,41 +23,26 @@ export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<Role>('student');
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
     const validationError = validateForm(name, email, password);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
+    if (validationError) { setError(validationError); return; }
     setError('');
     setIsLoading(true);
-
     try {
-      // Backend expects "name" — not "fullName"
       await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
-
-      router.push({
-        pathname: '/otp-verification',
-        params: { email: email.trim().toLowerCase() },
-      });
+      router.push({ pathname: '/otp-verification', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
       if (isAxiosError(err)) {
-        if (err.response?.data?.message) {
-          setError(err.response.data.message);
-        } else if (err.response?.status === 409) {
-          setError('An account with this email already exists.');
-        } else if (err.request) {
-          setError(
-            'Unable to reach the server. Make sure the backend is running and your device is on the same Wi-Fi network.',
-          );
-        } else {
-          setError('Registration failed. Please try again.');
-        }
+        if (err.response?.data?.message) setError(err.response.data.message);
+        else if (err.response?.status === 409) setError('An account with this email already exists.');
+        else if (err.request) setError('Cannot reach server. Check your Wi-Fi and backend.');
+        else setError('Registration failed. Please try again.');
       } else {
         setError('Registration failed. Please try again.');
       }
@@ -66,39 +52,76 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.kav}>
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <Text style={styles.brand}>SkillSphere</Text>
-            <Text style={styles.title}>Create account</Text>
-            <Text style={styles.subtitle}>
-              Join your learning community and start tracking progress.
-            </Text>
+
+          {/* Brand */}
+          <View style={styles.brandRow}>
+            <View style={styles.logoMark}>
+              <View style={styles.logoInner} />
+            </View>
+            <Text style={styles.brandName}>SkillSphere</Text>
           </View>
 
+          {/* Headline */}
+          <View style={styles.headlineBlock}>
+            <Text style={styles.headline}>Join the{'\n'}community.</Text>
+            <Text style={styles.sub}>Track skills, hit goals, and grow with peers.</Text>
+          </View>
+
+          {/* Role toggle — above form for emphasis */}
+          <View style={styles.roleWrap}>
+            <Text style={styles.roleLabel}>I am a</Text>
+            <View style={styles.roleRow}>
+              {(['student', 'faculty'] as Role[]).map((item) => {
+                const active = role === item;
+                return (
+                  <Pressable
+                    disabled={isLoading}
+                    key={item}
+                    onPress={() => setRole(item)}
+                    style={[styles.roleBtn, active && styles.roleBtnActive]}>
+                    <View style={[styles.roleIcon, active && styles.roleIconActive]}>
+                      <Text style={[styles.roleEmoji]}>
+                        {item === 'student' ? '🎓' : '👨‍🏫'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.roleBtnText, active && styles.roleBtnTextActive]}>
+                      {item === 'student' ? 'Student' : 'Faculty'}
+                    </Text>
+                    {active && <View style={styles.roleCheck}><Text style={styles.roleCheckText}>✓</Text></View>}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Form */}
           <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full name</Text>
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>Full name</Text>
               <TextInput
                 autoCapitalize="words"
                 autoComplete="name"
                 editable={!isLoading}
+                onBlur={() => setFocusedField(null)}
                 onChangeText={setName}
+                onFocus={() => setFocusedField('name')}
                 placeholder="Aarav Mehta"
-                placeholderTextColor="#64748B"
-                style={styles.input}
+                placeholderTextColor={Colors.text4}
+                style={[styles.input, focusedField === 'name' && styles.inputFocused]}
                 value={name}
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>Email address</Text>
               <TextInput
                 autoCapitalize="none"
                 autoComplete="email"
@@ -106,72 +129,66 @@ export default function RegisterScreen() {
                 editable={!isLoading}
                 inputMode="email"
                 keyboardType="email-address"
+                onBlur={() => setFocusedField(null)}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor="#64748B"
-                style={styles.input}
+                onFocus={() => setFocusedField('email')}
+                placeholder="you@college.edu"
+                placeholderTextColor={Colors.text4}
+                style={[styles.input, focusedField === 'email' && styles.inputFocused]}
                 value={email}
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                autoCapitalize="none"
-                editable={!isLoading}
-                onChangeText={setPassword}
-                placeholder="Create a password (min 6 chars)"
-                placeholderTextColor="#64748B"
-                secureTextEntry
-                style={styles.input}
-                value={password}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Role</Text>
-              <View style={styles.roleRow}>
-                {(['student', 'faculty'] as Role[]).map((item) => {
-                  const isSelected = role === item;
-                  return (
-                    <Pressable
-                      disabled={isLoading}
-                      key={item}
-                      onPress={() => setRole(item)}
-                      style={[styles.roleButton, isSelected && styles.roleButtonSelected]}>
-                      <Text style={[styles.roleText, isSelected && styles.roleTextSelected]}>
-                        {item === 'student' ? 'Student' : 'Faculty'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View>
+                <TextInput
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                  onBlur={() => setFocusedField(null)}
+                  onChangeText={setPassword}
+                  onFocus={() => setFocusedField('password')}
+                  placeholder="Min 6 characters"
+                  placeholderTextColor={Colors.text4}
+                  secureTextEntry={!showPassword}
+                  style={[styles.input, styles.inputWithEye, focusedField === 'password' && styles.inputFocused]}
+                  value={password}
+                />
+                <Pressable hitSlop={12} onPress={() => setShowPassword(p => !p)} style={styles.eyeBtn}>
+                  <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                </Pressable>
               </View>
             </View>
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorDot}>●</Text>
+                <Text style={styles.errorMsg}>{error}</Text>
+              </View>
+            ) : null}
 
             <Pressable
               disabled={isLoading}
               onPress={handleRegister}
               style={({ pressed }) => [
-                styles.button,
-                isLoading && styles.buttonDisabled,
-                pressed && !isLoading && styles.buttonPressed,
+                styles.cta,
+                isLoading && styles.ctaDisabled,
+                pressed && !isLoading && styles.ctaPressed,
               ]}>
-              {isLoading ? (
-                <ActivityIndicator color="#042F2E" />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
+              {isLoading
+                ? <ActivityIndicator color={Colors.bg0} size="small" />
+                : <Text style={styles.ctaText}>Create Account →</Text>}
             </Pressable>
           </View>
 
-          <Pressable onPress={() => router.replace('/login')} style={styles.loginLink}>
-            <Text style={styles.loginText}>
-              Already have an account?{' '}
-              <Text style={styles.loginHighlight}>Sign in</Text>
-            </Text>
-          </Pressable>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account?</Text>
+            <Pressable hitSlop={8} onPress={() => router.replace('/login')}>
+              <Text style={styles.footerLink}>Sign in</Text>
+            </Pressable>
+          </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -179,76 +196,90 @@ export default function RegisterScreen() {
 }
 
 function validateForm(name: string, email: string, password: string) {
-  if (name.trim().length < 2) return 'Enter your full name.';
+  if (name.trim().length < 2) return 'Please enter your full name.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address.';
   if (password.length < 6) return 'Password must be at least 6 characters.';
   return '';
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: '#080B12', flex: 1 },
-  keyboardView: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 20 },
-  header: { gap: 8 },
-  brand: { color: '#5EEAD4', fontSize: 14, fontWeight: '900', textTransform: 'uppercase' },
-  title: { color: '#F8FAFC', fontSize: 34, fontWeight: '900' },
-  subtitle: { color: '#94A3B8', fontSize: 16, lineHeight: 23 },
-  form: {
-    backgroundColor: '#0F172A',
-    borderColor: '#1E293B',
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 18,
-    padding: 20,
+  safe: { backgroundColor: Colors.bg1, flex: 1 },
+  kav: { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 32, paddingBottom: 48, gap: 28 },
+
+  brandRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
+  logoMark: {
+    alignItems: 'center', backgroundColor: Colors.accentSoft, borderColor: '#1A4A40',
+    borderRadius: Radius.sm, borderWidth: 1, height: 38, justifyContent: 'center', width: 38,
   },
-  inputGroup: { gap: 8 },
-  label: { color: '#CBD5E1', fontSize: 14, fontWeight: '800' },
+  logoInner: {
+    backgroundColor: Colors.accent, borderRadius: 3, height: 18,
+    transform: [{ rotate: '45deg' }], width: 18,
+  },
+  brandName: { ...Typography.h2, color: Colors.text0, fontWeight: '800' },
+
+  headlineBlock: { gap: 8 },
+  headline: { color: Colors.text0, fontSize: 40, fontWeight: '800', letterSpacing: -1, lineHeight: 46 },
+  sub: { ...Typography.body, color: Colors.text2 },
+
+  // Role
+  roleWrap: { gap: 12 },
+  roleLabel: { ...Typography.uiSm, color: Colors.text2, fontWeight: '600' },
+  roleRow: { flexDirection: 'row', gap: 12 },
+  roleBtn: {
+    alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
+    borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 8, paddingVertical: 16,
+    position: 'relative',
+  },
+  roleBtnActive: { backgroundColor: Colors.accentDim, borderColor: '#2DD4BF' },
+  roleIcon: {
+    alignItems: 'center', backgroundColor: Colors.bg4, borderRadius: Radius.sm,
+    height: 44, justifyContent: 'center', width: 44,
+  },
+  roleIconActive: { backgroundColor: Colors.accentSoft },
+  roleEmoji: { fontSize: 22 },
+  roleBtnText: { ...Typography.uiSm, color: Colors.text2 },
+  roleBtnTextActive: { color: Colors.text0, fontWeight: '700' },
+  roleCheck: {
+    alignItems: 'center', backgroundColor: Colors.accent, borderRadius: 10,
+    height: 20, justifyContent: 'center', position: 'absolute', right: 10, top: 10, width: 20,
+  },
+  roleCheckText: { color: Colors.bg0, fontSize: 11, fontWeight: '800' },
+
+  // Form
+  form: { gap: 18 },
+  inputWrap: { gap: 7 },
+  inputLabel: { ...Typography.uiSm, color: Colors.text1, fontWeight: '600' },
   input: {
-    backgroundColor: '#111827',
-    borderColor: '#263449',
-    borderRadius: 8,
-    borderWidth: 1,
-    color: '#F8FAFC',
-    fontSize: 16,
-    minHeight: 52,
-    paddingHorizontal: 14,
+    backgroundColor: Colors.bg4, borderColor: Colors.border1, borderRadius: Radius.md,
+    borderWidth: 1, color: Colors.text0, fontSize: 16, height: 54, paddingHorizontal: Spacing.lg,
   },
-  roleRow: { flexDirection: 'row', gap: 10 },
-  roleButton: {
-    alignItems: 'center',
-    backgroundColor: '#111827',
-    borderColor: '#263449',
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 48,
-    justifyContent: 'center',
+  inputWithEye: { paddingRight: 72 },
+  inputFocused: { borderColor: Colors.accent },
+  eyeBtn: {
+    alignItems: 'center', bottom: 0, justifyContent: 'center',
+    paddingHorizontal: Spacing.md, position: 'absolute', right: 0, top: 0,
   },
-  roleButtonSelected: { backgroundColor: '#134E4A', borderColor: '#5EEAD4' },
-  roleText: { color: '#94A3B8', fontSize: 15, fontWeight: '800' },
-  roleTextSelected: { color: '#F8FAFC' },
-  errorText: {
-    backgroundColor: '#451A1A',
-    borderColor: '#7F1D1D',
-    borderRadius: 8,
-    borderWidth: 1,
-    color: '#FCA5A5',
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-    padding: 12,
+  eyeText: { ...Typography.uiSm, color: Colors.accentText },
+
+  errorBox: {
+    alignItems: 'flex-start', backgroundColor: '#1C0000', borderColor: '#4C0519',
+    borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: Spacing.md,
   },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#5EEAD4',
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 52,
+  errorDot: { color: Colors.danger, fontSize: 10, marginTop: 3 },
+  errorMsg: { ...Typography.bodySm, color: Colors.danger, flex: 1 },
+
+  cta: {
+    alignItems: 'center', backgroundColor: Colors.accent, borderRadius: Radius.md,
+    elevation: 8, height: 54, justifyContent: 'center', marginTop: 4,
+    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35, shadowRadius: 16,
   },
-  buttonDisabled: { opacity: 0.55 },
-  buttonPressed: { transform: [{ scale: 0.98 }] },
-  buttonText: { color: '#042F2E', fontSize: 16, fontWeight: '900' },
-  loginLink: { alignItems: 'center', paddingVertical: 8 },
-  loginText: { color: '#64748B', fontSize: 15 },
-  loginHighlight: { color: '#5EEAD4', fontWeight: '900' },
+  ctaDisabled: { opacity: 0.45, shadowOpacity: 0 },
+  ctaPressed: { opacity: 0.85, transform: [{ scale: 0.975 }] },
+  ctaText: { color: Colors.bg0, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+
+  footer: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
+  footerText: { ...Typography.bodySm, color: Colors.text3 },
+  footerLink: { ...Typography.bodySm, color: Colors.accentText, fontWeight: '700' },
 });

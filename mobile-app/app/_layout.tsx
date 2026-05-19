@@ -1,34 +1,56 @@
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Tabs } from 'expo-router';
+import type { ComponentProps } from 'react';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { Colors } from '@/lib/theme';
 
-const skillSphereTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#080B12',
-    border: '#1E293B',
-    card: '#0F172A',
-    notification: '#FBBF24',
-    primary: '#5EEAD4',
-    text: '#F8FAFC',
-  },
-};
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
-export default function RootLayout() {
+const TAB_CONFIG = [
+  { name: 'index',         label: 'Home',         icon: 'home',                 iconOutline: 'home-outline' },
+  { name: 'leaderboard',  label: 'Leaderboard',   icon: 'trophy',               iconOutline: 'trophy-outline' },
+  { name: 'notifications',label: 'Inbox',         icon: 'notifications',        iconOutline: 'notifications-outline' },
+  { name: 'profile',      label: 'Profile',       icon: 'person-circle',        iconOutline: 'person-circle-outline' },
+] as const;
+
+export default function TabLayout() {
   return (
-    <ThemeProvider value={skillSphereTheme}>
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-        <Stack.Screen name="otp-verification" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="light" />
-    </ThemeProvider>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.text3,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: 2,
+        },
+        tabBarStyle: {
+          backgroundColor: Colors.bg2,
+          borderTopColor: Colors.border0,
+          borderTopWidth: 1,
+          height: 74,
+          paddingBottom: 12,
+          paddingTop: 10,
+        },
+        tabBarIconStyle: { marginTop: 2 },
+      }}>
+      {TAB_CONFIG.map(({ name, label, icon, iconOutline }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title: label,
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                color={color}
+                name={(focused ? icon : iconOutline) as IconName}
+                size={24}
+              />
+            ),
+          }}
+        />
+      ))}
+    </Tabs>
   );
 }
