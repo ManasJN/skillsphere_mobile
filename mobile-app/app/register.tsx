@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', bottom: 0, justifyContent: 'center',
     paddingHorizontal: Spacing.md, position: 'absolute', right: 0, top: 0,
   },
-  eyeText: { ...Typography.uiSm, color: Colors.accentText },
+  eyeText: { ...Typography.uiSm, color: Colors.accentLight },
 
   errorBox: {
     alignItems: 'flex-start', backgroundColor: '#1C0000', borderColor: '#4C0519',
@@ -281,5 +281,5 @@ const styles = StyleSheet.create({
 
   footer: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
   footerText: { ...Typography.bodySm, color: Colors.text3 },
-  footerLink: { ...Typography.bodySm, color: Colors.accentText, fontWeight: '700' },
+  footerLink: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '700' },
 });

@@ -1,56 +1,35 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs } from 'expo-router';
-import type { ComponentProps } from 'react';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 import { Colors } from '@/lib/theme';
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
+const theme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background:   Colors.bg1,
+    card:         Colors.bg2,
+    border:       Colors.border1,
+    primary:      Colors.accent,
+    notification: Colors.warning,
+    text:         Colors.text0,
+  },
+};
 
-const TAB_CONFIG = [
-  { name: 'index',         label: 'Home',         icon: 'home',                 iconOutline: 'home-outline' },
-  { name: 'leaderboard',  label: 'Leaderboard',   icon: 'trophy',               iconOutline: 'trophy-outline' },
-  { name: 'notifications',label: 'Inbox',         icon: 'notifications',        iconOutline: 'notifications-outline' },
-  { name: 'profile',      label: 'Profile',       icon: 'person-circle',        iconOutline: 'person-circle-outline' },
-] as const;
-
-export default function TabLayout() {
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.text3,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginBottom: 2,
-        },
-        tabBarStyle: {
-          backgroundColor: Colors.bg2,
-          borderTopColor: Colors.border0,
-          borderTopWidth: 1,
-          height: 74,
-          paddingBottom: 12,
-          paddingTop: 10,
-        },
-        tabBarIconStyle: { marginTop: 2 },
-      }}>
-      {TAB_CONFIG.map(({ name, label, icon, iconOutline }) => (
-        <Tabs.Screen
-          key={name}
-          name={name}
-          options={{
-            title: label,
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                color={color}
-                name={(focused ? icon : iconOutline) as IconName}
-                size={24}
-              />
-            ),
-          }}
-        />
-      ))}
-    </Tabs>
+    <SafeAreaProvider>
+      <ThemeProvider value={theme}>
+        <Stack initialRouteName="login" screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="login"            options={{ headerShown: false }} />
+          <Stack.Screen name="register"         options={{ headerShown: false }} />
+          <Stack.Screen name="otp-verification" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)"           options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="light" backgroundColor={Colors.bg1} />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

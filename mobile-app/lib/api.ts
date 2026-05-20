@@ -1,11 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
+import { API_BASE_URL } from './config';
 
 // ─── Central config ──────────────────────────────────────────────────────────
-// Replace this IP with your machine's LAN IP when it changes.
-// On Android physical device + Expo Go, localhost won't work — use the LAN IP.
-export const API_BASE_URL = 'http://10.38.159.20:5000/api';
+// Token storage key remains constant
 export const TOKEN_STORAGE_KEY = 'skillsphere_jwt_token';
 
 // ─── Axios instance ──────────────────────────────────────────────────────────
@@ -15,18 +14,35 @@ export const api = axios.create({
 });
 
 // Attach JWT to every request
-api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    config.headers = config.headers ?? {};
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    if (__DEV__) {
+      console.error('[API] request interceptor error', error);
+    }
+    return Promise.reject(error);
+  },
+);
 
 // Auto-logout on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (__DEV__) {
+      console.error('[API] response interceptor error', {
+        message: error?.message,
+        url: error?.config?.url,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
     if (error.response?.status === 401) {
       await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY]);
       router.replace('/login');
@@ -98,3 +114,22 @@ export const recommendationsAPI = {
 };
 
 export default api;
+
+export const opportunitiesAPI = {
+  getAll: (params?: Record<string, string>) => api.get('/opportunities', { params }),
+  getOne: (id: string) => api.get(`/opportunities/${id}`),
+  apply:  (id: string) => api.post(`/opportunities/${id}/apply`),
+};
+
+export const usersAPI = {
+  getById:    (id: string) => api.get(`/users/${id}`),
+  update:     (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
+  updateCodingStats: (id: string, data: Record<string, unknown>) => api.put(`/users/${id}/coding-stats`, data),
+  addCert:    (id: string, formData: FormData) =>
+    api.post(`/users/${id}/certifications`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+};
+
+export const achievementsAPI = {
+  getMine: () => api.get('/achievements/my'),
+  getAll:  () => api.get('/achievements'),
+};

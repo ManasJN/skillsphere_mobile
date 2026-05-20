@@ -63,14 +63,16 @@ export function Row({
 }
 
 export function EmptyState({
+  emoji,
   title,
   body,
   style,
   titleStyle,
   bodyStyle,
 }: {
+  emoji?: string;
   title: string;
-  body: string;
+  body?: string;
   style?: StyleProp<ViewStyle>;
   titleStyle?: StyleProp<TextStyle>;
   bodyStyle?: StyleProp<TextStyle>;
@@ -78,10 +80,10 @@ export function EmptyState({
   return (
     <View style={[styles.emptyState, style]}>
       <View style={styles.emptyIcon}>
-        <Text style={styles.emptyEmoji}>✨</Text>
+        <Text style={styles.emptyEmoji}>{emoji ?? '✨'}</Text>
       </View>
       <Text style={[styles.emptyTitle, titleStyle]}>{title}</Text>
-      <Text style={[styles.emptyBody, bodyStyle]}>{body}</Text>
+      {body ? <Text style={[styles.emptyBody, bodyStyle]}>{body}</Text> : null}
     </View>
   );
 }
@@ -132,16 +134,18 @@ export function SectionHeader({
   style,
 }: {
   title: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[styles.sectionHeader, style]}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <Pressable onPress={onAction} style={styles.sectionAction}>
-        <Text style={styles.sectionActionText}>{actionLabel}</Text>
-      </Pressable>
+      {actionLabel && onAction ? (
+        <Pressable onPress={onAction} style={styles.sectionAction}>
+          <Text style={styles.sectionActionText}>{actionLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -256,7 +260,7 @@ const styles = StyleSheet.create({
   },
   sectionActionText: {
     ...Typography.uiSm,
-    color: Colors.accentText,
+    color: Colors.accentLight,
   },
   statChip: {
     alignItems: 'center',
@@ -276,7 +280,7 @@ const styles = StyleSheet.create({
     color: Colors.text0,
   },
   statChipValueAccent: {
-    color: Colors.accentText,
+    color: Colors.accentLight,
   },
   statChipLabel: {
     ...Typography.bodySm,
@@ -287,3 +291,7 @@ const styles = StyleSheet.create({
     color: Colors.text3,
   },
 });
+
+// Re-export a few newer UI primitives implemented in `app-ui.tsx`
+// so `@/components/ui` remains the single import surface used across screens.
+export { Skeleton, SkeletonCard, ErrorBanner } from './app-ui';

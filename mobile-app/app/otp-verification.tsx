@@ -159,7 +159,7 @@ export default function OtpVerificationScreen() {
               hitSlop={8}
               onPress={handleResend}>
               {isResending
-                ? <ActivityIndicator color={Colors.accentText} size="small" />
+                ? <ActivityIndicator color={Colors.accentLight} size="small" />
                 : <Text style={styles.resendLink}>Resend code</Text>}
             </Pressable>
           </View>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   iconEmoji: { fontSize: 32 },
   title: { ...Typography.h1, color: Colors.text0, textAlign: 'center' },
   sub: { ...Typography.body, color: Colors.text2, textAlign: 'center', lineHeight: 24 },
-  emailHighlight: { color: Colors.accentText, fontWeight: '700' },
+  emailHighlight: { color: Colors.accentLight, fontWeight: '700' },
 
   // OTP
   otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accentDim, borderColor: '#1A4A40',
     borderRadius: Radius.sm, borderWidth: 1, padding: Spacing.md,
   },
-  messageMsg: { ...Typography.bodySm, color: Colors.accentText, textAlign: 'center' },
+  messageMsg: { ...Typography.bodySm, color: Colors.accentLight, textAlign: 'center' },
 
   cta: {
     alignItems: 'center', backgroundColor: Colors.accent, borderRadius: Radius.md,
@@ -228,5 +228,5 @@ const styles = StyleSheet.create({
 
   resendRow: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
   resendLabel: { ...Typography.bodySm, color: Colors.text3 },
-  resendLink: { ...Typography.bodySm, color: Colors.accentText, fontWeight: '700' },
+  resendLink: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '700' },
 });

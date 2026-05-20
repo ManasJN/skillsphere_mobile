@@ -1,117 +1,95 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+  ActivityIndicator, Pressable, RefreshControl,
+  ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  analyticsAPI,
-  authAPI,
-  collegesAPI,
-  goalsAPI,
-  projectsAPI,
-  recommendationsAPI,
-  skillsAPI,
+  analyticsAPI, authAPI, collegesAPI, goalsAPI,
+  opportunitiesAPI, projectsAPI, recommendationsAPI, skillsAPI,
 } from '@/lib/api';
-import { Colors, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
-import { Avatar, Badge, Card, EmptyState, ProgressBar, Row, SectionHeader, StatChip } from '@/components/ui';
+import { Colors, Radius, Shadow, Typography } from '@/lib/theme';
+import {
+  Avatar, Badge, Card, Divider, EmptyState, ErrorBanner,
+  ProgressBar, Row, SectionHeader, Skeleton, SkeletonCard, StatChip,
+} from '@/components/ui';
+import { getInitials, levelFromXP, xpProgress } from '@/hooks/useUser';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type User = {
-  batch?: string; cgpa?: number | string; codingStats?: Record<string, number>;
-  college?: string; collegeId?: { collegeName?: string }; department?: string;
-  name?: string; rollNumber?: string; semester?: number | string;
-  socialLinks?: Record<string, string>; streakDays?: number;
-  verificationStatus?: string; xpPoints?: number;
+  name?: string; xpPoints?: number; streakDays?: number; cgpa?: number|string;
+  codingStats?: Record<string,number>; verificationStatus?: string;
+  collegeId?: { collegeName?: string }; college?: string;
 };
-type Skill  = { category?: string; level?: number; name?: string };
-type Goal   = { deadline?: string; priority?: string; progress?: number; title?: string };
-type Project = { status?: string; techStack?: string[]; title?: string };
-type RecommendationSummary = {
-  hasRecommendations?: boolean; nextSkill?: { name?: string; why?: string };
-  profileComplete?: boolean; roadmapPhase?: { timeframe?: string; title?: string }; summary?: string;
-};
-type CollegeUpdates = {
-  announcements: { _id?: string; body?: string; title?: string }[];
-  events: { _id?: string; description?: string; title?: string }[];
-};
+type Skill   = { name?: string; category?: string; level?: number };
+type Goal    = { title?: string; priority?: string; progress?: number; deadline?: string; status?: string };
+type Project = { title?: string; status?: string; techStack?: string[] };
+type Stats   = { totalSkills: number; activeGoals: number; completedGoals: number; totalProjects: number; goalCompletionRate: number };
+type Opp     = { _id: string; title?: string; type?: string; company?: string; matchScore?: number; deadline?: string };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function getGreeting() {
+function greeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
-function getInitials(name = '') {
-  return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'SS';
-}
-function levelFromXP(xp: number) { return Math.floor(xp / 500) + 1; }
-function xpProgress(xp: number) {
-  const lv = levelFromXP(xp);
-  return Math.round(((xp - (lv - 1) * 500) / 500) * 100);
-}
-function formatDate(d?: string) {
+function fmtDate(d?: string) {
   if (!d) return '–';
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short' }).format(new Date(d));
 }
-function priorityBadge(p?: string): Parameters<typeof Badge>[0]['color'] {
-  return ({ high: 'red', medium: 'amber', low: 'green' } as const)[p ?? ''] ?? 'muted';
+function priorityColor(p?: string): string {
+  return ({ high: Colors.danger, medium: Colors.warning, low: Colors.success }[p ?? ''] ?? Colors.text3);
+}
+function skillColor(cat?: string): string {
+  return (Colors.skill as Record<string, string>)[cat ?? ''] ?? Colors.skill.default;
 }
 function statusBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
-  return ({ completed: 'green', ongoing: 'teal', planned: 'indigo', abandoned: 'red' } as const)[s ?? ''] ?? 'muted';
+  return ({ completed:'green', ongoing:'teal', planned:'indigo', abandoned:'red' } as const)[s ?? ''] ?? 'muted';
 }
-function skillColor(cat?: string) {
-  return (
-    {
-      'Web Development': Colors.skill.webDev,
-      'AI/ML': Colors.skill.aiml,
-      Cloud: Colors.skill.cloud,
-      DSA: Colors.skill.dsa,
-      'UI/UX': Colors.skill.uiux,
-    }[cat ?? ''] ?? Colors.skill.default
-  );
+function oppBadge(t?: string): Parameters<typeof Badge>[0]['color'] {
+  return ({ internship:'teal', hackathon:'indigo', job:'green', research:'blue', scholarship:'amber' } as const)[t ?? ''] ?? 'muted';
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const [user, setUser] = useState<User | null>(null);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [recommendation, setRecommendation] = useState<RecommendationSummary | null>(null);
-  const [updates, setUpdates] = useState<CollegeUpdates>({ announcements: [], events: [] });
+  const [user,    setUser]    = useState<User|null>(null);
+  const [skills,  setSkills]  = useState<Skill[]>([]);
+  const [goals,   setGoals]   = useState<Goal[]>([]);
+  const [projects,setProjects]= useState<Project[]>([]);
+  const [stats,   setStats]   = useState<Stats|null>(null);
+  const [opps,    setOpps]    = useState<Opp[]>([]);
+  const [updates, setUpdates] = useState<{title?:string; kind:string}[]>([]);
+  const [rec,     setRec]     = useState<{summary?:string; nextSkill?:{name?:string;why?:string}} | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error,   setError]   = useState('');
 
   const load = useCallback(async () => {
     setError('');
     try {
-      analyticsAPI.myStats().catch(() => {});
-      const [meRes, skillsRes, goalsRes, projectsRes, recRes] = await Promise.all([
+      const [meRes, skillsRes, goalsRes, projRes, statsRes, oppsRes, recRes] = await Promise.all([
         authAPI.me(),
         skillsAPI.getMine(),
         goalsAPI.getMine({ status: 'active' }),
         projectsAPI.getMine(),
+        analyticsAPI.myStats().catch(() => null),
+        opportunitiesAPI.getAll({ limit: '4' }).catch(() => null),
         recommendationsAPI.getDashboardSummary().catch(() => null),
       ]);
-      const nextUser = meRes.data.user ?? meRes.data.data ?? meRes.data;
-      setUser(nextUser);
+      const u = meRes.data.user ?? meRes.data.data ?? meRes.data;
+      setUser(u);
       setSkills(skillsRes.data.data ?? []);
       setGoals(goalsRes.data.data ?? []);
-      setProjects(projectsRes.data.data ?? []);
-      setRecommendation(recRes?.data?.data ?? null);
-      if (nextUser?.verificationStatus === 'verified') {
+      setProjects(projRes.data.data ?? []);
+      setStats(statsRes?.data?.data ?? null);
+      setOpps(oppsRes?.data?.data ?? []);
+      setRec(recRes?.data?.data ?? null);
+      if (u?.verificationStatus === 'verified') {
         const updRes = await collegesAPI.studentUpdates().catch(() => null);
-        setUpdates({ announcements: updRes?.data?.announcements ?? [], events: updRes?.data?.events ?? [] });
+        const anns = (updRes?.data?.announcements ?? []).map((a: {title?:string}) => ({ ...a, kind: 'Announcement' }));
+        const evts = (updRes?.data?.events ?? []).map((e: {title?:string}) => ({ ...e, kind: 'Event' }));
+        setUpdates([...anns, ...evts].slice(0, 3));
       }
     } catch { setError('Could not load dashboard. Pull down to refresh.'); }
     finally { setLoading(false); setRefreshing(false); }
@@ -120,121 +98,118 @@ export default function HomeScreen() {
   useEffect(() => { load(); }, [load]);
   const onRefresh = () => { setRefreshing(true); load(); };
 
-  const xp = user?.xpPoints ?? 0;
-  const level = levelFromXP(xp);
+  const xp       = user?.xpPoints ?? 0;
+  const level    = levelFromXP(xp);
   const progress = xpProgress(xp);
-  const cs = user?.codingStats ?? {};
-  const firstName = user?.name?.split(' ')[0] ?? 'Learner';
-
-  const collegeItems = useMemo(() => [
-    ...updates.announcements.map(a => ({ ...a, kind: 'Announcement' as const })),
-    ...updates.events.map(e => ({ ...e, body: e.description, kind: 'Event' as const })),
-  ].slice(0, 3), [updates]);
+  const cs       = user?.codingStats ?? {};
+  const name     = user?.name?.split(' ')[0] ?? 'Learner';
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
+    <SafeAreaView edges={['top']} style={S.safe}>
       <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            colors={[Colors.accent]}
-            onRefresh={onRefresh}
-            refreshing={refreshing}
-            tintColor={Colors.accent}
-          />
-        }
+        contentContainerStyle={S.scroll}
+        refreshControl={<RefreshControl colors={[Colors.accent]} onRefresh={onRefresh} refreshing={refreshing} tintColor={Colors.accent} />}
         showsVerticalScrollIndicator={false}>
 
         {/* ── Top Bar ── */}
-        <View style={styles.topBar}>
-          <View style={styles.topBarLeft}>
-            <Text style={styles.topBarEyebrow}>{getGreeting()}</Text>
-            <Text style={styles.topBarName}>{firstName} 👋</Text>
+        <View style={S.topBar}>
+          <View>
+            <Text style={S.topEyebrow}>{greeting()}</Text>
+            <Text style={S.topName}>{name} 👋</Text>
           </View>
-          <Avatar initials={getInitials(user?.name)} size={46} />
+          <Pressable onPress={() => router.push('/(tabs)/profile')}>
+            <Avatar initials={getInitials(user?.name)} size={46} />
+          </Pressable>
         </View>
 
-        {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator color={Colors.accent} size="large" />
-            <Text style={styles.loadingText}>Loading your dashboard…</Text>
-          </View>
-        ) : (
+        {loading ? <DashboardSkeleton /> : (
           <>
             {error ? <ErrorBanner message={error} /> : null}
 
-            {/* ── XP Hero Card ── */}
+            {/* ── XP Card ── */}
             <XPCard xp={xp} level={level} progress={progress} streak={user?.streakDays ?? 0} />
 
-            {/* ── Quick Stats ── */}
-            <View style={styles.statsRow}>
-              <StatChip label="CGPA" value={String(user?.cgpa ?? '–')} />
-              <StatChip label="LeetCode" value={String(cs.leetcodeSolved ?? 0)} accent />
-              <StatChip label="CF Rating" value={String(cs.codeforcesRating ?? '–')} />
-            </View>
+            {/* ── Stats Row ── */}
+            {stats && (
+              <View style={S.statsRow}>
+                <StatChip label="Skills" value={String(stats.totalSkills)} />
+                <StatChip label="Goals" value={String(stats.activeGoals)} accent />
+                <StatChip label="Projects" value={String(stats.totalProjects)} />
+              </View>
+            )}
 
-            {/* ── College / Verification ── */}
-            <VerificationSection user={user} items={collegeItems} />
-
-            {/* ── AI Recommendation ── */}
-            {recommendation !== null && <RecommendationCard summary={recommendation} />}
-
-            {/* ── Skills ── */}
-            <Section title="Top Skills" actionLabel="Manage" onAction={() => router.push('/(tabs)/profile')}>
-              {skills.length === 0 ? (
-                <EmptyState title="No skills tracked yet" body="Add skills from your profile to see progress here." />
-              ) : (
-                <View style={styles.skillsGrid}>
-                  {skills.slice(0, 6).map((skill, i) => (
-                    <SkillChip key={`${skill.name}-${i}`} skill={skill} />
+            {/* ── Coding Snapshot ── */}
+            {Object.keys(cs).length > 0 && (
+              <Card style={S.sectionCard}>
+                <SectionHeader title="Coding Stats" actionLabel="Update →" onAction={() => router.push('/(tabs)/profile')} />
+                <View style={S.codingRow}>
+                  {[
+                    { label: 'Solved', value: cs.leetcodeSolved ?? 0,       color: Colors.accentLight },
+                    { label: 'Easy',   value: cs.leetcodeEasy ?? 0,         color: Colors.success },
+                    { label: 'Medium', value: cs.leetcodeMedium ?? 0,       color: Colors.warning },
+                    { label: 'Hard',   value: cs.leetcodeHard ?? 0,         color: Colors.danger },
+                  ].map(({ label, value, color }) => (
+                    <View key={label} style={S.codingCell}>
+                      <Text style={[S.codingVal, { color }]}>{value}</Text>
+                      <Text style={S.codingLbl}>{label}</Text>
+                    </View>
                   ))}
                 </View>
-              )}
-            </Section>
+              </Card>
+            )}
 
-            {/* ── Active Goals ── */}
-            <Section title="Active Goals" actionLabel="See all" onAction={() => router.push('/(tabs)/profile')}>
-              {goals.length === 0 ? (
-                <EmptyState title="No active goals" body="Set goals with deadlines to track them here." />
-              ) : (
-                <View style={styles.listGap}>
-                  {goals.slice(0, 3).map((goal, i) => (
-                    <GoalRow key={`${goal.title}-${i}`} goal={goal} />
-                  ))}
-                </View>
-              )}
-            </Section>
+            {/* ── AI Guidance ── */}
+            {rec && <RecommendationCard rec={rec} />}
 
-            {/* ── Projects ── */}
-            <Section title="Projects" actionLabel="View all" onAction={() => router.push('/(tabs)/profile')}>
-              {projects.length === 0 ? (
-                <EmptyState title="No projects yet" body="Add a project to showcase your work." />
-              ) : (
-                <View style={styles.listGap}>
-                  {projects.slice(0, 3).map((project, i) => (
-                    <ProjectRow key={`${project.title}-${i}`} project={project} />
-                  ))}
-                </View>
-              )}
-            </Section>
-
-            {/* ── Coding Stats ── */}
-            <Section title="Coding Profile" actionLabel="Update" onAction={() => router.push('/(tabs)/profile')}>
-              <View style={styles.codingGrid}>
-                {[
-                  { label: 'Easy',      value: cs.leetcodeEasy ?? 0,           color: Colors.low },
-                  { label: 'Medium',    value: cs.leetcodeMedium ?? 0,         color: Colors.medium },
-                  { label: 'Hard',      value: cs.leetcodeHard ?? 0,           color: Colors.high },
-                  { label: 'Contests',  value: cs.contestsParticipated ?? 0,   color: Colors.xp },
-                ].map(item => (
-                  <View key={item.label} style={styles.codingCell}>
-                    <Text style={[styles.codingValue, { color: item.color }]}>{item.value}</Text>
-                    <Text style={styles.codingLabel}>{item.label}</Text>
+            {/* ── College Updates ── */}
+            {updates.length > 0 && (
+              <Card style={S.sectionCard}>
+                <SectionHeader title="College Updates" />
+                {updates.map((u, i) => (
+                  <View key={i}>
+                    {i > 0 && <Divider style={{ marginVertical: 10 }} />}
+                    <Row style={{ gap: 10 }}>
+                      <Badge label={u.kind} color={u.kind === 'Event' ? 'indigo' : 'teal'} />
+                      <Text style={S.updateTitle} numberOfLines={1}>{u.title}</Text>
+                    </Row>
                   </View>
                 ))}
-              </View>
-            </Section>
+              </Card>
+            )}
 
+            {/* ── Opportunities Preview ── */}
+            {opps.length > 0 && (
+              <Card style={S.sectionCard}>
+                <SectionHeader title="For You" actionLabel="See all" onAction={() => router.push('/(tabs)/opportunities')} />
+                <View style={S.listGap}>
+                  {opps.map((o) => <OppPreviewRow key={o._id} opp={o} />)}
+                </View>
+              </Card>
+            )}
+
+            {/* ── Skills ── */}
+            <Card style={S.sectionCard}>
+              <SectionHeader title="Top Skills" actionLabel="Profile →" onAction={() => router.push('/(tabs)/profile')} />
+              {skills.length === 0
+                ? <EmptyState emoji="🎯" title="No skills yet" body="Add skills from your profile to track your progress." />
+                : <View style={S.skillsGrid}>{skills.slice(0, 6).map((sk, i) => <SkillChip key={i} skill={sk} />)}</View>}
+            </Card>
+
+            {/* ── Active Goals ── */}
+            <Card style={S.sectionCard}>
+              <SectionHeader title="Active Goals" actionLabel="All goals →" onAction={() => router.push('/(tabs)/profile')} />
+              {goals.length === 0
+                ? <EmptyState emoji="🏁" title="No active goals" body="Set deadlines and track progress toward your targets." />
+                : <View style={S.listGap}>{goals.slice(0, 3).map((g, i) => <GoalRow key={i} goal={g} />)}</View>}
+            </Card>
+
+            {/* ── Projects ── */}
+            {projects.length > 0 && (
+              <Card style={S.sectionCard}>
+                <SectionHeader title="Projects" actionLabel="View all" onAction={() => router.push('/(tabs)/profile')} />
+                <View style={S.listGap}>{projects.slice(0, 3).map((p, i) => <ProjectRow key={i} project={p} />)}</View>
+              </Card>
+            )}
           </>
         )}
       </ScrollView>
@@ -242,304 +217,219 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
-function XPCard({ xp, level, progress, streak }: { xp: number; level: number; progress: number; streak: number }) {
+function XPCard({ xp, level, progress, streak }: { xp:number; level:number; progress:number; streak:number }) {
   return (
-    <View style={xpStyles.card}>
-      {/* Subtle glow spots */}
-      <View style={xpStyles.glowTL} />
-      <View style={xpStyles.glowBR} />
-
-      <View style={xpStyles.top}>
+    <View style={xpS.card}>
+      <View style={xpS.glow1} /><View style={xpS.glow2} />
+      <Row style={xpS.top}>
         <View>
-          <Text style={xpStyles.levelLabel}>LEVEL {level}</Text>
-          <Text style={xpStyles.xpValue}>{xp.toLocaleString()} XP</Text>
+          <Text style={xpS.levelLbl}>LEVEL {level}</Text>
+          <Text style={xpS.xpNum}>{xp.toLocaleString()} XP</Text>
         </View>
-        <View style={xpStyles.streakPill}>
-          <Text style={xpStyles.streakFire}>🔥</Text>
-          <Text style={xpStyles.streakNum}>{streak}</Text>
-          <Text style={xpStyles.streakSuffix}>day streak</Text>
+        <View style={xpS.streak}>
+          <Text style={xpS.streakFire}>🔥</Text>
+          <Text style={xpS.streakNum}>{streak}</Text>
+          <Text style={xpS.streakLbl}>day streak</Text>
         </View>
-      </View>
-
-      <View style={xpStyles.progressWrap}>
-        <View style={xpStyles.progressMeta}>
-          <Text style={xpStyles.progressLabel}>Progress to Level {level + 1}</Text>
-          <Text style={xpStyles.progressPct}>{progress}%</Text>
-        </View>
+      </Row>
+      <View style={{ gap: 8 }}>
+        <Row style={xpS.progMeta}>
+          <Text style={xpS.progLbl}>Progress to Level {level + 1}</Text>
+          <Text style={xpS.progPct}>{progress}%</Text>
+        </Row>
         <ProgressBar pct={progress} color={Colors.accent} height={8} />
       </View>
     </View>
   );
 }
-
-const xpStyles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.xpSoft, borderColor: '#2E2A6A', borderRadius: Radius.xl,
-    borderWidth: 1, gap: 20, overflow: 'hidden', padding: 20, ...Shadow.md,
-  },
-  glowTL: {
-    backgroundColor: '#4F46E5', borderRadius: 80, height: 100, left: -30,
-    opacity: 0.12, position: 'absolute', top: -30, width: 100,
-  },
-  glowBR: {
-    backgroundColor: Colors.accent, borderRadius: 80, bottom: -40,
-    height: 120, opacity: 0.08, position: 'absolute', right: -40, width: 120,
-  },
-  top: { alignItems: 'flex-start', flexDirection: 'row', justifyContent: 'space-between' },
-  levelLabel: { ...Typography.label, color: Colors.xp, marginBottom: 4 },
-  xpValue: { color: Colors.text0, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
-  streakPill: {
-    alignItems: 'center', backgroundColor: '#1A1440', borderColor: '#2E2A6A',
-    borderRadius: Radius.full, borderWidth: 1, flexDirection: 'row', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 8,
-  },
+const xpS = StyleSheet.create({
+  card: { backgroundColor: Colors.xpMid, borderColor: '#2E2A6A', borderRadius: Radius.xl, borderWidth: 1, gap: 20, overflow: 'hidden', padding: 20, ...Shadow.xp },
+  glow1: { backgroundColor: '#4F46E5', borderRadius: 80, height: 120, left: -40, opacity: 0.14, position: 'absolute', top: -40, width: 120 },
+  glow2: { backgroundColor: Colors.accent, borderRadius: 80, bottom: -50, height: 130, opacity: 0.08, position: 'absolute', right: -50, width: 130 },
+  top: { justifyContent: 'space-between', alignItems: 'flex-start' },
+  levelLbl: { ...Typography.label, color: Colors.xpLight, marginBottom: 4 },
+  xpNum: { color: Colors.text0, fontSize: 38, fontWeight: '800', letterSpacing: -1 },
+  streak: { alignItems: 'center', backgroundColor: '#1A1440', borderColor: '#2E2A6A', borderRadius: Radius.full, borderWidth: 1, flexDirection: 'row', gap: 5, paddingHorizontal: 12, paddingVertical: 8 },
   streakFire: { fontSize: 16 },
   streakNum: { color: Colors.text0, fontSize: 18, fontWeight: '800' },
-  streakSuffix: { ...Typography.bodySm, color: Colors.text3 },
-  progressWrap: { gap: 8 },
-  progressMeta: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  progressLabel: { ...Typography.bodySm, color: Colors.text3 },
-  progressPct: { ...Typography.mono, color: Colors.xp },
+  streakLbl: { ...Typography.bodySm, color: Colors.text3 },
+  progMeta: { justifyContent: 'space-between' },
+  progLbl: { ...Typography.bodySm, color: Colors.text3 },
+  progPct: { ...Typography.mono, color: Colors.xpLight },
 });
 
-function Section({
-  title, actionLabel, onAction, children,
-}: { title: string; actionLabel: string; onAction: () => void; children: React.ReactNode }) {
-  return (
-    <Card style={styles.sectionCard}>
-      <SectionHeader title={title} actionLabel={actionLabel} onAction={onAction} />
-      {children}
-    </Card>
-  );
-}
-
 function SkillChip({ skill }: { skill: Skill }) {
-  const color = skillColor(skill.category);
+  const c = skillColor(skill.category);
   const pct = skill.level ?? 0;
   return (
-    <View style={skillChipStyles.wrap}>
-      <View style={skillChipStyles.top}>
-        <View style={[skillChipStyles.dot, { backgroundColor: color }]} />
-        <Text style={skillChipStyles.name} numberOfLines={1}>{skill.name}</Text>
-        <Text style={[skillChipStyles.pct, { color }]}>{pct}%</Text>
-      </View>
-      <ProgressBar pct={pct} color={color} height={4} />
+    <View style={skS.wrap}>
+      <Row style={skS.top}>
+        <View style={[skS.dot, { backgroundColor: c }]} />
+        <Text style={skS.name} numberOfLines={1}>{skill.name}</Text>
+        <Text style={[skS.pct, { color: c }]}>{pct}%</Text>
+      </Row>
+      <ProgressBar pct={pct} color={c} height={4} />
     </View>
   );
 }
-const skillChipStyles = StyleSheet.create({
-  wrap: {
-    backgroundColor: Colors.bg3, borderColor: Colors.border1, borderRadius: Radius.md,
-    borderWidth: 1, gap: 8, padding: 12, width: '48.5%',
-  },
-  top: { alignItems: 'center', flexDirection: 'row', gap: 6 },
-  dot: { borderRadius: 4, height: 8, width: 8 },
+const skS = StyleSheet.create({
+  wrap: { backgroundColor: Colors.bg3, borderColor: Colors.border1, borderRadius: Radius.md, borderWidth: 1, gap: 8, padding: 12, width: '48.5%' },
+  top: { gap: 6 },
+  dot: { borderRadius: 5, height: 8, width: 8 },
   name: { ...Typography.uiSm, color: Colors.text1, flex: 1 },
   pct: { ...Typography.mono, fontWeight: '700' },
 });
 
 function GoalRow({ goal }: { goal: Goal }) {
+  const pColor = priorityColor(goal.priority);
   return (
-    <View style={rowStyles.wrap}>
-      <Row style={rowStyles.header}>
-        <Text style={rowStyles.title} numberOfLines={1}>{goal.title ?? 'Goal'}</Text>
-        <Badge label={goal.priority ?? 'medium'} color={priorityBadge(goal.priority)} />
+    <View style={gS.wrap}>
+      <Row style={gS.top}>
+        <View style={[gS.dot, { backgroundColor: pColor }]} />
+        <Text style={gS.title} numberOfLines={1}>{goal.title}</Text>
+        <Text style={gS.date}>Due {fmtDate(goal.deadline)}</Text>
       </Row>
-      <ProgressBar pct={goal.progress ?? 0} color={goal.priority === 'high' ? Colors.xp : Colors.accent} height={5} />
-      <Row style={rowStyles.meta}>
-        <Text style={rowStyles.metaText}>{goal.progress ?? 0}% done</Text>
-        <Text style={rowStyles.metaText}>Due {formatDate(goal.deadline)}</Text>
+      <ProgressBar pct={goal.progress ?? 0} color={pColor} height={5} />
+      <Row style={gS.meta}>
+        <Text style={gS.pct}>{goal.progress ?? 0}% complete</Text>
+        <Badge label={goal.priority ?? 'medium'} color={
+          ({ high:'red', medium:'amber', low:'green' } as const)[goal.priority ?? ''] ?? 'muted'
+        } />
       </Row>
     </View>
   );
 }
+const gS = StyleSheet.create({
+  wrap: { backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md, borderWidth: 1, gap: 10, padding: 14 },
+  top: { gap: 8, justifyContent: 'space-between' },
+  dot: { borderRadius: 5, height: 8, width: 8 },
+  title: { ...Typography.h4, color: Colors.text0, flex: 1 },
+  date: { ...Typography.bodySm, color: Colors.text3 },
+  meta: { justifyContent: 'space-between' },
+  pct: { ...Typography.bodySm, color: Colors.text3 },
+});
 
 function ProjectRow({ project }: { project: Project }) {
   return (
-    <View style={rowStyles.wrap}>
-      <Row style={rowStyles.header}>
-        <Text style={rowStyles.title} numberOfLines={1}>{project.title ?? 'Project'}</Text>
+    <View style={pjS.wrap}>
+      <Row style={pjS.top}>
+        <Text style={pjS.title} numberOfLines={1}>{project.title}</Text>
         <Badge label={project.status ?? 'planned'} color={statusBadge(project.status)} />
       </Row>
       {(project.techStack?.length ?? 0) > 0 && (
-        <Row style={rowStyles.tags}>
+        <Row style={pjS.tags}>
           {project.techStack!.slice(0, 4).map(t => (
-            <View key={t} style={rowStyles.tag}><Text style={rowStyles.tagText}>{t}</Text></View>
+            <View key={t} style={pjS.tag}><Text style={pjS.tagTxt}>{t}</Text></View>
           ))}
         </Row>
       )}
     </View>
   );
 }
-
-const rowStyles = StyleSheet.create({
-  wrap: {
-    backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md,
-    borderWidth: 1, gap: 10, padding: 14,
-  },
-  header: { gap: 10, justifyContent: 'space-between' },
-  title: { ...Typography.h3, color: Colors.text0, flex: 1 },
-  meta: { justifyContent: 'space-between' },
-  metaText: { ...Typography.bodySm, color: Colors.text3 },
+const pjS = StyleSheet.create({
+  wrap: { backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md, borderWidth: 1, gap: 10, padding: 14 },
+  top: { gap: 10, justifyContent: 'space-between' },
+  title: { ...Typography.h4, color: Colors.text0, flex: 1 },
   tags: { flexWrap: 'wrap', gap: 6 },
-  tag: {
-    backgroundColor: Colors.bg4, borderColor: Colors.border1, borderRadius: Radius.full,
-    borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3,
-  },
-  tagText: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
+  tag: { backgroundColor: Colors.bg4, borderColor: Colors.border1, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
+  tagTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
 });
 
-function VerificationSection({
-  user, items,
-}: { user: User | null; items: { _id?: string; body?: string; kind: string; title?: string }[] }) {
-  const isVerified = user?.verificationStatus === 'verified';
+function OppPreviewRow({ opp }: { opp: Opp }) {
   return (
-    <View style={verStyles.card}>
-      <Row style={verStyles.header}>
-        <Badge
-          label={isVerified ? 'Verified' : 'Unverified'}
-          color={isVerified ? 'teal' : 'amber'}
-        />
-        <Text style={verStyles.college} numberOfLines={1}>
-          {isVerified
-            ? (user?.collegeId?.collegeName ?? user?.college ?? 'College verified')
-            : 'Complete verification'}
-        </Text>
-      </Row>
-      <Text style={verStyles.body}>
-        {isVerified
-          ? 'You have access to official college announcements and events.'
-          : 'Submit your college ID to unlock official updates and opportunities.'}
-      </Text>
-      {isVerified && items.length > 0 && (
-        <View style={verStyles.updates}>
-          {items.map((item, i) => (
-            <View key={`${item.kind}-${i}`} style={verStyles.updateRow}>
-              <Badge label={item.kind} color={item.kind === 'Event' ? 'indigo' : 'teal'} />
-              <Text style={verStyles.updateTitle} numberOfLines={1}>{item.title}</Text>
-            </View>
-          ))}
+    <View style={opS.wrap}>
+      <Row style={opS.top}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={opS.title} numberOfLines={1}>{opp.title}</Text>
+          <Text style={opS.company}>{opp.company}</Text>
         </View>
-      )}
+        <View style={{ gap: 6, alignItems: 'flex-end' }}>
+          <Badge label={opp.type ?? 'opportunity'} color={oppBadge(opp.type)} />
+          {opp.matchScore != null && (
+            <Text style={opS.match}>{opp.matchScore}% match</Text>
+          )}
+        </View>
+      </Row>
     </View>
   );
 }
-const verStyles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.lg,
-    borderWidth: 1, gap: 12, padding: 16,
-  },
-  header: { gap: 10 },
-  college: { ...Typography.uiSm, color: Colors.text1, flex: 1 },
-  body: { ...Typography.bodySm, color: Colors.text3, lineHeight: 20 },
-  updates: { gap: 10 },
-  updateRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
-  updateTitle: { ...Typography.uiSm, color: Colors.text1, flex: 1 },
+const opS = StyleSheet.create({
+  wrap: { backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md, borderWidth: 1, padding: 14 },
+  top: { gap: 12, justifyContent: 'space-between', alignItems: 'flex-start' },
+  title: { ...Typography.h4, color: Colors.text0 },
+  company: { ...Typography.bodySm, color: Colors.text3 },
+  match: { ...Typography.mono, color: Colors.accentLight },
 });
 
-function RecommendationCard({ summary }: { summary: RecommendationSummary }) {
+function RecommendationCard({ rec }: { rec: { summary?: string; nextSkill?: { name?: string; why?: string } } }) {
   return (
-    <View style={recStyles.card}>
-      <Row style={recStyles.header}>
-        <View style={recStyles.iconWrap}>
-          <Text style={recStyles.icon}>✦</Text>
-        </View>
+    <View style={rcS.card}>
+      <Row style={rcS.header}>
+        <View style={rcS.iconBox}><Text style={rcS.icon}>✦</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={recStyles.title}>Career Guidance</Text>
-          <Text style={recStyles.sub}>Personalized to your profile</Text>
+          <Text style={rcS.title}>AI Guidance</Text>
+          <Text style={rcS.sub}>Personalised for your profile</Text>
         </View>
-        <Pressable onPress={() => router.push('/(tabs)/profile')} hitSlop={10}>
-          <Text style={recStyles.openLink}>Open →</Text>
-        </Pressable>
       </Row>
-      {summary.hasRecommendations ? (
-        <>
-          {summary.summary ? <Text style={recStyles.body}>{summary.summary}</Text> : null}
-          {summary.nextSkill ? (
-            <View style={recStyles.nextSkill}>
-              <Text style={recStyles.nextLabel}>Next focus</Text>
-              <Text style={recStyles.nextName}>{summary.nextSkill.name}</Text>
-              {summary.nextSkill.why ? <Text style={recStyles.nextWhy}>{summary.nextSkill.why}</Text> : null}
-            </View>
-          ) : null}
-        </>
-      ) : (
-        <Text style={recStyles.body}>
-          {summary.profileComplete
-            ? 'Generate recommendations from your career inputs.'
-            : 'Complete your profile to get a personalised growth plan.'}
-        </Text>
+      {rec.summary ? <Text style={rcS.body}>{rec.summary}</Text> : null}
+      {rec.nextSkill && (
+        <View style={rcS.nextBox}>
+          <Text style={rcS.nextLbl}>Next to learn</Text>
+          <Text style={rcS.nextName}>{rec.nextSkill.name}</Text>
+          {rec.nextSkill.why ? <Text style={rcS.nextWhy}>{rec.nextSkill.why}</Text> : null}
+        </View>
       )}
     </View>
   );
 }
-const recStyles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.accentDim, borderColor: '#1A4A40', borderRadius: Radius.lg,
-    borderWidth: 1, gap: 14, padding: 16,
-  },
-  header: { alignItems: 'flex-start', gap: 12 },
-  iconWrap: {
-    alignItems: 'center', backgroundColor: Colors.accentSoft, borderColor: '#1A4A40',
-    borderRadius: Radius.sm, borderWidth: 1, height: 36, justifyContent: 'center', width: 36,
-  },
-  icon: { color: Colors.accent, fontSize: 18, fontWeight: '800' },
+const rcS = StyleSheet.create({
+  card: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.xl, borderWidth: 1, gap: 14, padding: 18 },
+  header: { gap: 12, alignItems: 'flex-start' },
+  iconBox: { alignItems: 'center', backgroundColor: Colors.accentSoft, borderColor: Colors.accentMid, borderRadius: Radius.sm, borderWidth: 1, height: 36, justifyContent: 'center', width: 36 },
+  icon: { color: Colors.accent, fontSize: 17, fontWeight: '900' },
   title: { ...Typography.h3, color: Colors.text0 },
   sub: { ...Typography.bodySm, color: Colors.text3 },
-  openLink: { ...Typography.uiSm, color: Colors.accentText },
-  body: { ...Typography.bodySm, color: Colors.text2, lineHeight: 20 },
-  nextSkill: {
-    backgroundColor: Colors.accentSoft, borderColor: '#1A4A40', borderRadius: Radius.md,
-    borderWidth: 1, gap: 4, padding: 12,
-  },
-  nextLabel: { ...Typography.label, color: Colors.accent, fontSize: 10 },
+  body: { ...Typography.bodySm, color: Colors.text2, lineHeight: 21 },
+  nextBox: { backgroundColor: Colors.accentSoft, borderColor: Colors.accentMid, borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 14 },
+  nextLbl: { ...Typography.label, color: Colors.accent, fontSize: 10 },
   nextName: { ...Typography.h3, color: Colors.text0 },
   nextWhy: { ...Typography.bodySm, color: Colors.text2, lineHeight: 20 },
 });
 
-function ErrorBanner({ message }: { message: string }) {
+function DashboardSkeleton() {
   return (
-    <View style={styles.errorBanner}>
-      <Text style={styles.errorDot}>●</Text>
-      <Text style={styles.errorMsg}>{message}</Text>
+    <View style={{ gap: 14 }}>
+      <View style={[xpS.card, { gap: 16 }]}>
+        <Skeleton height={16} width="40%" />
+        <Skeleton height={36} width="55%" />
+        <Skeleton height={8} />
+      </View>
+      <View style={S.statsRow}>
+        <Skeleton height={64} radius={12} style={{ flex: 1 }} />
+        <Skeleton height={64} radius={12} style={{ flex: 1 }} />
+        <Skeleton height={64} radius={12} style={{ flex: 1 }} />
+      </View>
+      <SkeletonCard />
+      <SkeletonCard />
     </View>
   );
 }
 
-// ─── Root Styles ──────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 14, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 16 },
-
+  scroll: { gap: 14, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 16 },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 4 },
-  topBarLeft: { gap: 2 },
-  topBarEyebrow: { ...Typography.label, color: Colors.text3, fontSize: 10 },
-  topBarName: { color: Colors.text0, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
-
-  loadingWrap: { alignItems: 'center', gap: 14, paddingVertical: 60 },
-  loadingText: { ...Typography.body, color: Colors.text3 },
-
+  topEyebrow: { ...Typography.label, color: Colors.text3, fontSize: 10 },
+  topName: { color: Colors.text0, fontSize: 24, fontWeight: '800', letterSpacing: -0.4 },
   statsRow: { flexDirection: 'row', gap: 10 },
-
   sectionCard: { gap: 14 },
-
   skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   listGap: { gap: 10 },
-
-  codingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  codingCell: {
-    alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
-    borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 14, width: '48%',
-  },
-  codingValue: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  codingLabel: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
-
-  errorBanner: {
-    alignItems: 'flex-start', backgroundColor: '#1C0000', borderColor: '#4C0519',
-    borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: Spacing.md,
-  },
-  errorDot: { color: Colors.danger, fontSize: 10, marginTop: 3 },
-  errorMsg: { ...Typography.bodySm, color: Colors.danger, flex: 1 },
+  codingRow: { flexDirection: 'row', gap: 10 },
+  codingCell: { alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1, borderRadius: Radius.md, borderWidth: 1, flex: 1, gap: 4, paddingVertical: 14 },
+  codingVal: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  codingLbl: { ...Typography.bodySm, color: Colors.text3 },
+  updateTitle: { ...Typography.h4, color: Colors.text1, flex: 1 },
 });

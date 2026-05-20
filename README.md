@@ -1,277 +1,256 @@
 # SkillSphere
 
-SkillSphere is a full-stack student growth tracking platform for students, faculty, and administrators. It combines skill tracking, project portfolios, coding analytics, goals, achievements, opportunity matching, notifications, leaderboards, and role-based dashboards in one web app.
+SkillSphere is a production-minded full‑stack student growth platform that helps students, faculty, and administrators track skills, projects, goals, achievements, and placement readiness. This repository contains the Express/MongoDB backend, a legacy React web client, and a modern React Native Expo mobile app with Expo Router.
 
-## Tech Stack
+Key highlights:
+- Modern mobile-first dashboard and UX ✅
+- JWT auth with refresh tokens & OTP email verification ✅
+- Centralized API configuration for easy LAN testing (Expo) ✅
+- Expo Router-based navigation and responsive tab layout ✅
 
-**Frontend**
-
-- React 18
-- React Router 6
-- Tailwind CSS
-- Framer Motion
-- Recharts
-- Axios
-- React Query
-- React Hot Toast
-
-**Backend**
-
-- Node.js
-- Express
-- MongoDB with Mongoose
-- JWT authentication
-- Email OTP verification with Nodemailer
-- bcryptjs password hashing
-- Helmet, CORS, Morgan, and rate limiting
-- Multer file uploads
-
-## Project Structure
-
-```txt
-skillsphere-full/
-+-- client/          React frontend
-+-- server/          Express API and MongoDB models
-+-- package.json     Root scripts for install, dev, seed, and build
-`-- README.md
-```
+---
 
 ## Features
 
-- Public landing, login, registration, and OTP verification
-- JWT-based auth with refresh tokens
-- Role-based access for students, faculty, and admins
-- Student dashboard for profile, skills, goals, projects, analytics, and recommendations
-- Faculty dashboard for student visibility and academic/career insights
-- Admin dashboard for platform-level management
-- Coding profile stats for LeetCode, Codeforces, and GitHub
-- XP, achievements, streaks, and leaderboards
-- Opportunity feed with student applications and matching
-- Notifications and broadcast announcements
-- Career recommendation profile, history, and generated guidance
+- Role-based auth and dashboards for Students, Faculty, and Admins
+- Skill tracking, goals & milestones, projects & portfolios
+- Coding profile imports (LeetCode/GitHub) and analytics
+- Leaderboards, achievements, streaks, and XP system
+- Opportunity feed with matching & applications
+- Real-time notifications and broadcast messages
+- Mobile-first UI with accessible, safe-area aware navigation
 
-## Prerequisites
+---
 
-- Node.js 18 or newer
-- npm
-- MongoDB running locally or a MongoDB Atlas connection string
-- Gmail app password or SMTP-compatible credentials for OTP emails
+## Tech Stack
 
-## Setup
+- Backend: Node.js, Express, MongoDB (Mongoose)
+- Mobile: React Native (Expo), Expo Router, TypeScript
+- Web (legacy): React, Tailwind CSS
+- Auth: JWT access + refresh tokens, email OTP via Nodemailer
+- Storage: Local filesystem uploads (development), MongoDB for data
 
-Install root dependencies and both app workspaces:
+---
+
+## Mobile App Highlights
+
+- Built with Expo and Expo Router for file-based navigation
+- Centralized API client (`mobile-app/lib/api.ts`) using `EXPO_PUBLIC_API_URL`
+- Safe-area aware floating tab bar for modern UX
+- Token persistence using `AsyncStorage` and automatic header injection
+
+---
+
+## Backend Highlights
+
+- REST API with modular controllers and middleware
+- JWT access + refresh token handling and secure cookie/headers patterns
+- Email OTP verification flow for new registrations
+- Seed scripts for demo data
+
+---
+
+## Authentication Flow
+
+1. User registers (email + password) → backend creates user and sends OTP email.
+2. User verifies OTP → backend enables account.
+3. User logs in → backend returns `{ token, refreshToken, user }`.
+4. Mobile app stores `token` in `AsyncStorage` and uses `Authorization: Bearer <token>` on API calls.
+5. On 401 responses, client attempts refresh with `refreshToken`.
+
+---
+
+## Repository Structure
+
+```
+/server         # Express API, controllers, models, middleware
+/client         # Legacy React web frontend (optional)
+/mobile-app     # Expo React Native app (current mobile client)
+README.md       # This file
+```
+
+See server and mobile-app folders for full sub-structure.
+
+---
+
+## Installation (full stack)
+
+Prerequisites
+- Node.js 18+ and npm
+- MongoDB locally or Atlas
+- Expo CLI (optional): `npm install -g expo-cli` (not required for Expo CLI v7+)
+
+Install everything from the repository root:
 
 ```bash
 npm install
 npm run install:all
 ```
 
-Create the backend environment file:
+This runs installs for `server`, `client`, and `mobile-app`.
+
+---
+
+## Backend Setup (server)
+
+1. Copy the example env file and edit secrets:
 
 ```bash
 cd server
 cp .env.example .env
+# (on PowerShell) Copy-Item .env.example .env
 ```
 
-On Windows PowerShell, use:
+2. Edit `server/.env` with your values. Key variables:
 
-```powershell
-Copy-Item .env.example .env
-```
+- `MONGO_URI` — MongoDB connection string
+- `JWT_SECRET` / `JWT_REFRESH_SECRET` — long random secrets
+- `EMAIL_USER` / `EMAIL_PASS` — SMTP credentials for OTP
 
-Update `server/.env`:
-
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb://localhost:27017/skillsphere
-JWT_SECRET=replace_with_a_long_random_secret
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_SECRET=replace_with_another_long_random_secret
-JWT_REFRESH_EXPIRES_IN=30d
-CLIENT_URL=http://localhost:3000
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_gmail_app_password
-```
-
-Seed demo data:
+3. Seed demo data (optional):
 
 ```bash
 npm run seed
 ```
 
-Start the frontend and backend together:
+4. Start server (dev):
 
 ```bash
 npm run dev
 ```
 
-## Local URLs
+The API will be available at the port configured in `server/.env` (default `5000`). Health check: `http://localhost:5000/api/health`.
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- Health check: http://localhost:5000/api/health
+---
 
-## Demo Accounts
+## Mobile App Setup (mobile-app)
 
-After running `npm run seed`, use these accounts:
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | `admin@nit.edu` | `Admin@1234` |
-| Faculty | `faculty@nit.edu` | `Faculty@1234` |
-| Student | `arjun@nit.edu` | `Student@1234` |
-| Student | `priya@nit.edu` | `Student@1234` |
-| Student | `<student-first-name>@nit.edu` | `Student@1234` |
-
-The seeder creates ten student profiles with skills, goals, projects, opportunities, achievements, and notifications.
-
-## Scripts
-
-Run from the repository root:
+1. Copy the mobile example env and set the API base URL for your environment:
 
 ```bash
-npm run install:all   # install server and client dependencies
-npm run dev           # run server and client concurrently
-npm run server        # run only the Express server with nodemon
-npm run client        # run only the React client
-npm run seed          # seed MongoDB with demo data
-npm run build         # build the React app
+cd mobile-app
+cp .env.example .env
+# or on PowerShell: Copy-Item .env.example .env
 ```
 
-Server-only scripts from `server/`:
+2. Edit `mobile-app/.env` and set `EXPO_PUBLIC_API_URL` to your backend API base, including `/api`:
+
+```
+EXPO_PUBLIC_API_URL=http://192.168.1.42:5000/api
+```
+
+Notes:
+- Use your machine's LAN IP (e.g. `192.168.x.x`) when testing on a physical device with Expo Go.
+- Do NOT commit `.env`.
+
+3. Install and run the app:
+
+```bash
+cd mobile-app
+npm install
+npx expo start --clear
+```
+
+Open the project in Expo Go (scan QR) or run on emulator.
+
+---
+
+## Environment Variables
+
+- `server/.env` — backend secrets (see `server/.env.example`)
+- `mobile-app/.env` — contains `EXPO_PUBLIC_API_URL` used by the mobile client
+
+Important: When your development machine IP changes (Wi‑Fi/ethernet), update `mobile-app/.env:EXPO_PUBLIC_API_URL` and restart Expo with `npx expo start --clear` — no code edits required.
+
+---
+
+## Running the Backend
+
+From repository root:
+
+```bash
+npm run server      # run server only (uses server/ package.json)
+```
+
+Or inside `server`:
 
 ```bash
 npm run dev
-npm start
-npm run seed
 ```
 
-Client-only scripts from `client/`:
+---
+
+## Running the Expo App
+
+From `mobile-app`:
 
 ```bash
-npm start
-npm run build
+npm install
+npx expo start --clear
 ```
 
-## Frontend Routes
+Tips:
+- If using a physical device, ensure your phone and dev machine are on the same LAN.
+- Use `EXPO_PUBLIC_API_URL` with your machine's LAN IP.
 
-| Route | Page | Access |
-| --- | --- | --- |
-| `/` | Landing or role dashboard redirect | Public/auth-aware |
-| `/login` | Login | Public |
-| `/register` | Register | Public |
-| `/verify-otp` | OTP verification | Public |
-| `/dashboard` | Student dashboard | Student |
-| `/profile` | Student profile | Student |
-| `/skills` | Skills and goals | Student |
-| `/projects` | Project portfolio | Student |
-| `/recommendations` | Career recommendations | Student |
-| `/faculty` | Faculty dashboard | Faculty, Admin |
-| `/students` | Student management view | Faculty, Admin |
-| `/admin` | Admin dashboard | Admin |
-| `/leaderboard` | Leaderboard | Authenticated users |
-| `/opportunities` | Opportunities | Authenticated users |
-| `/notifications` | Notifications | Authenticated users |
-| `/analytics` | Analytics | Authenticated users |
-| `/settings` | Settings | Authenticated users |
+---
 
-## API Overview
+## Expo Go / Android Troubleshooting (network & IP)
 
-Base URL: `http://localhost:5000/api`
+- If the app reports "Cannot reach server", ensure `EXPO_PUBLIC_API_URL` points to your dev machine LAN IP and the backend is running.
+- On Windows, get the LAN IP with `ipconfig` and look for the IPv4 address under your active adapter.
+- If using an emulator, `10.0.2.2` is Android emulator localhost; use it if you run the server on the same machine and emulator cannot reach host.
+- Restart Expo with `npx expo start --clear` after changing `.env`.
+- If CORS or network errors appear, check backend `CORS` middleware and that the server binds to `0.0.0.0` if needed.
 
-```txt
-GET    /health
+---
 
-POST   /auth/register
-POST   /auth/verify-otp
-POST   /auth/login
-POST   /auth/refresh
-POST   /auth/logout
-GET    /auth/me
-PUT    /auth/profile
+## API Configuration Guide
 
-GET    /users
-GET    /users/:id
-PUT    /users/:id
-DELETE /users/:id
-PUT    /users/:id/coding-stats
-PUT    /users/:id/import/leetcode
-PUT    /users/:id/import/github
-POST   /users/:id/certifications
-POST   /users/:id/showcase
+- Mobile: `mobile-app/lib/config.ts` reads `EXPO_PUBLIC_API_URL` and falls back to `http://localhost:5000/api` for local dev.
+- Web: the legacy client proxies requests in development — see `client/package.json` proxy settings.
 
-GET    /skills
-POST   /skills
-PUT    /skills/:id
-DELETE /skills/:id
+Updating API URL for mobile devices:
 
-GET    /goals
-POST   /goals
-PUT    /goals/:id
-DELETE /goals/:id
-PUT    /goals/:id/milestones/:milestoneId/toggle
+1. Edit `mobile-app/.env` and set `EXPO_PUBLIC_API_URL` to `http://<YOUR_LAN_IP>:<PORT>/api`.
+2. Run `npx expo start --clear`.
 
-GET    /projects
-POST   /projects
-PUT    /projects/:id
-DELETE /projects/:id
-POST   /projects/:id/like
+---
 
-GET    /opportunities
-POST   /opportunities
-PUT    /opportunities/:id
-DELETE /opportunities/:id
-POST   /opportunities/:id/apply
-GET    /opportunities/:id/matched-students
+## Screenshots
 
-GET    /achievements
-GET    /achievements/my
-GET    /leaderboard
-GET    /leaderboard/department-summary
+Add screenshots of the mobile app UI in `mobile-app/assets/screenshots/` and update the links below:
 
-GET    /analytics/my-stats
-GET    /analytics/overview
-GET    /analytics/skills-distribution
-GET    /analytics/aspirations
-GET    /analytics/coding-activity
-GET    /analytics/placement-readiness
+- Mobile: `assets/screenshots/dashboard.png` (placeholder)
+- Mobile: `assets/screenshots/login.png` (placeholder)
 
-GET    /notifications
-PUT    /notifications/mark-all-read
-PUT    /notifications/:id/read
-POST   /notifications/broadcast
+---
 
-GET    /recommendations/profile
-PUT    /recommendations/profile
-POST   /recommendations/generate
-GET    /recommendations/latest
-GET    /recommendations/history
-GET    /recommendations/dashboard-summary
-```
+## Future Roadmap
 
-Most endpoints require an `Authorization: Bearer <token>` header after login.
+- E2E tests for API and mobile flows
+- Push notifications integration (FCM)
+- Multi-tenant support for colleges
+- Analytics & insights dashboards for admins
 
-## Production Build
+---
 
-Build the React client:
+## Contributing
 
-```bash
-npm run build
-```
+Contributions welcome — please follow these steps:
 
-Start the API:
+1. Fork the repo and create a feature branch.
+2. Run tests (if added) and ensure linting passes.
+3. Open a pull request describing the change and migration notes.
 
-```bash
-cd server
-npm start
-```
+For UI/UX changes, include screenshots and device previews.
 
-If you want Express to serve the built React app, add static serving in `server/index.js` and point it at `../client/build`.
+---
 
-## Notes
+## License
 
-- The React client proxies API requests to `http://localhost:5000` in development.
-- Uploaded files are served from `/uploads`.
-- `npm run seed` clears existing seeded collections before inserting demo data.
-- Keep real secrets out of Git. Use `server/.env.example` as the template and store actual credentials in `server/.env`.
+This repository is provided under the MIT License. Update the license file as needed for your project.
+
+---
+
+If you want, I can also generate a `mobile-app/README.md` with mobile-specific quickstart steps and screenshots placeholders. Would you like that? 

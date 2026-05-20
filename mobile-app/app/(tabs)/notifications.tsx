@@ -1,45 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+  Pressable, RefreshControl, ScrollView,
+  StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { notificationsAPI } from '@/lib/api';
-import { Colors, Radius, Typography } from '@/lib/theme';
-import { Badge, Card, EmptyState, Row } from '@/components/ui';
+import { Colors, Radius, Shadow, Typography } from '@/lib/theme';
+import { Badge, BadgeColor, Card, EmptyState, ErrorBanner, Row, Skeleton } from '@/components/ui';
 
 type Notification = {
-  _id: string; title: string; message: string; isRead: boolean;
-  createdAt: string; type?: string;
+  _id: string; title: string; message: string;
+  isRead: boolean; createdAt: string; type?: string;
 };
 
-function formatRelative(d: string) {
+function typeColor(t?: string): BadgeColor {
+  return ({
+    achievement: 'teal', goal: 'indigo', system: 'muted',
+    event: 'amber', mentor: 'blue', opportunity: 'green',
+  } as const)[t ?? ''] ?? 'muted';
+}
+
+function relativeTime(d: string) {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'Just now';
+  if (m < 1)  return 'just now';
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function typeColor(type?: string): Parameters<typeof Badge>[0]['color'] {
-  return ({
-    achievement: 'teal', goal: 'indigo', system: 'muted', event: 'amber', mentor: 'blue',
-  } as const)[type ?? ''] ?? 'muted';
-}
-
 export default function NotificationsScreen() {
-  const [items, setItems] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items,      setItems]      = useState<Notification[]>([]);
+  const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [error,      setError]      = useState('');
+  const [marking,    setMarking]    = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -53,140 +50,171 @@ export default function NotificationsScreen() {
   useEffect(() => { load(); }, [load]);
   const onRefresh = () => { setRefreshing(true); load(); };
 
-  const unread = items.filter(n => !n.isRead);
+  const unread = items.filter(n => !n.isRead).length;
 
   const markAllRead = async () => {
+    setMarking(true);
     try {
       await notificationsAPI.markAllRead();
       setItems(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch { /* silent */ }
+    finally { setMarking(false); }
   };
 
+  const markOne = async (id: string) => {
+    try {
+      await notificationsAPI.markRead(id);
+      setItems(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+    } catch { /* silent */ }
+  };
+
+  // Group into today / earlier
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayItems   = items.filter(n => new Date(n.createdAt) >= today);
+  const earlierItems = items.filter(n => new Date(n.createdAt) < today);
+
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
+    <SafeAreaView edges={['top']} style={S.safe}>
       <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl colors={[Colors.accent]} onRefresh={onRefresh} refreshing={refreshing} tintColor={Colors.accent} />
-        }
+        contentContainerStyle={S.content}
+        refreshControl={<RefreshControl colors={[Colors.accent]} onRefresh={onRefresh} refreshing={refreshing} tintColor={Colors.accent} />}
         showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
-        <Row style={styles.headerRow}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={styles.eyebrow}>Activity</Text>
-            <Text style={styles.title}>Notifications</Text>
+        {/* ── Header ── */}
+        <Row style={S.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={S.eyebrow}>Activity</Text>
+            <Text style={S.title}>Notifications</Text>
           </View>
-          {unread.length > 0 && (
-            <Pressable onPress={markAllRead} style={styles.markAllBtn} hitSlop={10}>
-              <Text style={styles.markAllText}>Mark all read</Text>
+          {unread > 0 && (
+            <Pressable
+              disabled={marking}
+              onPress={markAllRead}
+              style={S.markAllBtn}
+              hitSlop={10}>
+              <Text style={S.markAllTxt}>{marking ? 'Clearing…' : 'Mark all read'}</Text>
             </Pressable>
           )}
         </Row>
 
-        {/* Unread count badge */}
-        {unread.length > 0 && (
-          <View style={styles.unreadBanner}>
-            <View style={styles.unreadDot} />
-            <Text style={styles.unreadText}>
-              {unread.length} unread notification{unread.length > 1 ? 's' : ''}
+        {/* ── Unread banner ── */}
+        {unread > 0 && !loading && (
+          <View style={S.unreadBanner}>
+            <View style={S.unreadDot} />
+            <Text style={S.unreadTxt}>
+              {unread} unread notification{unread !== 1 ? 's' : ''}
             </Text>
           </View>
         )}
 
+        {error ? <ErrorBanner message={error} /> : null}
+
         {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator color={Colors.accent} size="large" />
-            <Text style={styles.loadingText}>Fetching updates…</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorBox}><Text style={styles.errorMsg}>{error}</Text></View>
+          <NotifSkeleton />
         ) : items.length === 0 ? (
           <Card>
-            <EmptyState
-              title="All caught up"
-              body="You'll see goal updates, achievements, and announcements here."
-            />
+            <EmptyState emoji="🔔" title="All caught up" body="Goal updates, achievements, and announcements will appear here." />
           </Card>
         ) : (
-          <Card style={styles.listCard}>
-            {items.map((notif, i) => (
-              <View key={notif._id}>
-                {i > 0 && <View style={styles.divider} />}
-                <NotifRow notif={notif} />
-              </View>
-            ))}
-          </Card>
+          <>
+            {todayItems.length > 0 && (
+              <NotifGroup title="Today" items={todayItems} onMarkRead={markOne} />
+            )}
+            {earlierItems.length > 0 && (
+              <NotifGroup title="Earlier" items={earlierItems} onMarkRead={markOne} />
+            )}
+          </>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function NotifRow({ notif }: { notif: Notification }) {
+function NotifGroup({ title, items, onMarkRead }: {
+  title: string; items: Notification[]; onMarkRead: (id: string) => void;
+}) {
   return (
-    <View style={[rowStyles.wrap, !notif.isRead && rowStyles.unread]}>
-      {!notif.isRead && <View style={rowStyles.dot} />}
-      <View style={rowStyles.body}>
-        <Row style={rowStyles.top}>
-          <Text style={rowStyles.title} numberOfLines={1}>{notif.title}</Text>
-          <Text style={rowStyles.time}>{formatRelative(notif.createdAt)}</Text>
-        </Row>
-        <Text style={rowStyles.message} numberOfLines={3}>{notif.message}</Text>
-        {notif.type && (
-          <Badge label={notif.type} color={typeColor(notif.type)} />
-        )}
+    <View style={G.wrap}>
+      <Text style={G.groupTitle}>{title}</Text>
+      <View style={G.listCard}>
+        {items.map((n, i) => (
+          <View key={n._id}>
+            {i > 0 && <View style={G.divider} />}
+            <NotifRow notif={n} onMarkRead={onMarkRead} />
+          </View>
+        ))}
       </View>
     </View>
   );
 }
-
-const rowStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row', gap: 12, padding: 16, paddingLeft: 20,
-  },
-  unread: { backgroundColor: '#0A1018' },
-  dot: {
-    backgroundColor: Colors.accent, borderRadius: Radius.full,
-    height: 8, marginTop: 6, position: 'absolute', left: 8, width: 8,
-  },
-  body: { flex: 1, gap: 6 },
-  top: { gap: 8, justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { ...Typography.uiSm, color: Colors.text0, flex: 1, lineHeight: 19 },
-  time: { ...Typography.bodySm, color: Colors.text3, marginTop: 1 },
-  message: { ...Typography.bodySm, color: Colors.text2, lineHeight: 19 },
+const G = StyleSheet.create({
+  wrap: { gap: 10 },
+  groupTitle: { ...Typography.label, color: Colors.text3, paddingHorizontal: 2 },
+  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden' },
+  divider: { backgroundColor: Colors.border0, height: 1 },
 });
 
-const styles = StyleSheet.create({
+function NotifRow({ notif, onMarkRead }: { notif: Notification; onMarkRead: (id: string) => void }) {
+  return (
+    <Pressable
+      onPress={() => { if (!notif.isRead) onMarkRead(notif._id); }}
+      style={({ pressed }) => [nS.row, !notif.isRead && nS.rowUnread, pressed && nS.rowPressed]}>
+      {!notif.isRead && <View style={nS.dot} />}
+      <View style={nS.body}>
+        <Row style={nS.top}>
+          <Text style={[nS.title, !notif.isRead && nS.titleUnread]} numberOfLines={1}>
+            {notif.title}
+          </Text>
+          <Text style={nS.time}>{relativeTime(notif.createdAt)}</Text>
+        </Row>
+        <Text style={nS.msg} numberOfLines={3}>{notif.message}</Text>
+        {notif.type && <Badge label={notif.type} color={typeColor(notif.type)} style={{ marginTop: 2 }} />}
+      </View>
+    </Pressable>
+  );
+}
+const nS = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 0, padding: 16, paddingLeft: 20 },
+  rowUnread: { backgroundColor: '#090D16' },
+  rowPressed: { backgroundColor: Colors.bg3 },
+  dot: {
+    backgroundColor: Colors.accent, borderRadius: Radius.full,
+    height: 8, left: 8, marginTop: 7, position: 'absolute', width: 8,
+  },
+  body: { flex: 1, gap: 6 },
+  top: { gap: 10, justifyContent: 'space-between', alignItems: 'flex-start' },
+  title: { ...Typography.uiSm, color: Colors.text1, flex: 1, lineHeight: 20 },
+  titleUnread: { color: Colors.text0, fontWeight: '700' },
+  time: { ...Typography.bodySm, color: Colors.text3, marginTop: 1 },
+  msg: { ...Typography.bodySm, color: Colors.text2, lineHeight: 20 },
+});
+
+function NotifSkeleton() {
+  return (
+    <View style={{ backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden' }}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <View key={i}>
+          {i > 0 && <View style={{ backgroundColor: Colors.border0, height: 1 }} />}
+          <View style={{ gap: 8, padding: 16 }}>
+            <Skeleton height={13} width="65%" />
+            <Skeleton height={11} />
+            <Skeleton height={11} width="80%" />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
   content: { gap: 14, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 20 },
-
-  headerRow: { justifyContent: 'space-between', alignItems: 'flex-end' },
+  header: { justifyContent: 'space-between', alignItems: 'flex-end' },
   eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
   title: { color: Colors.text0, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
-  markAllBtn: {
-    backgroundColor: Colors.accentDim, borderColor: '#1A4A40', borderRadius: Radius.full,
-    borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6,
-  },
-  markAllText: { ...Typography.bodySm, color: Colors.accentText, fontWeight: '600' },
-
-  unreadBanner: {
-    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: '#1A4A40',
-    borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: 10,
-  },
+  markAllBtn: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },
+  markAllTxt: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '600' },
+  unreadBanner: { alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: 10 },
   unreadDot: { backgroundColor: Colors.accent, borderRadius: 5, height: 10, width: 10 },
-  unreadText: { ...Typography.uiSm, color: Colors.accentText },
-
-  loadingWrap: { alignItems: 'center', gap: 14, paddingVertical: 60 },
-  loadingText: { ...Typography.body, color: Colors.text3 },
-
-  errorBox: {
-    backgroundColor: '#1C0000', borderColor: '#4C0519', borderRadius: Radius.sm,
-    borderWidth: 1, padding: 16,
-  },
-  errorMsg: { ...Typography.bodySm, color: Colors.danger, textAlign: 'center' },
-
-  listCard: { gap: 0, padding: 0, overflow: 'hidden' },
-  divider: { backgroundColor: Colors.border0, height: 1 },
+  unreadTxt: { ...Typography.uiSm, color: Colors.accentLight },
 });

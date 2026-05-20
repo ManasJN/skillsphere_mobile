@@ -1,121 +1,132 @@
 /**
- * SkillSphere Design System
- * One source of truth for all visual tokens.
+ * SkillSphere Design System — v2
+ * Single source of truth for all visual tokens.
  */
 
 export const Colors = {
-  // Background layers — darkest to lightest
-  bg0: '#060810',      // deepest background
-  bg1: '#0B0F1A',      // screen background
-  bg2: '#0F1520',      // card/surface
-  bg3: '#141C2B',      // elevated card
-  bg4: '#1A2236',      // input / subtle surface
+  // ── Backgrounds — darkest to lightest ─────────────────────────────────────
+  bg0:  '#04060D',   // screen edge / deepest
+  bg1:  '#080C14',   // default screen background
+  bg2:  '#0C1220',   // card surface
+  bg3:  '#111827',   // elevated card / input bg
+  bg4:  '#161F30',   // subtle input / chip
 
-  // Borders
-  border0: '#1A2236',  // hairline dividers
-  border1: '#1F2D42',  // card borders
-  border2: '#28395A',  // focused/interactive borders
+  // ── Borders ───────────────────────────────────────────────────────────────
+  border0: '#141E30',  // hairline separator
+  border1: '#1C2A3F',  // card border
+  border2: '#243450',  // focused/interactive
+  border3: '#2D4060',  // strong emphasis border
 
-  // Brand / Accent — electric teal
-  accent:     '#2DD4BF',  // primary action, active states
-  accentSoft: '#0D2926',  // tinted background for accent
-  accentDim:  '#0F3330',  // deeper tinted bg
-  accentText: '#5EEAD4',  // readable teal text on dark
+  // ── Brand Teal ────────────────────────────────────────────────────────────
+  accent:      '#2DD4BF',
+  accentLight: '#5EEAD4',
+  accentDim:   '#091F1D',
+  accentSoft:  '#0C2826',
+  accentMid:   '#134E4A',
 
-  // Semantic — XP / Growth — indigo
-  xp:     '#818CF8',  // level, XP highlights
-  xpSoft: '#1E1B4B',  // XP card background
+  // ── Indigo / XP ───────────────────────────────────────────────────────────
+  xp:     '#818CF8',
+  xpSoft: '#13103A',
+  xpMid:  '#1E1B4B',
+  xpLight:'#A5B4FC',
 
-  // Semantic — Goals / Priority
-  high:   '#F87171',  // high priority
-  medium: '#FBBF24',  // medium priority
-  low:    '#34D399',  // low priority / success
+  // ── Semantic Colours ──────────────────────────────────────────────────────
+  success: '#34D399',  low:  '#34D399',
+  warning: '#FBBF24',  medium: '#FBBF24',
+  danger:  '#F87171',  high: '#F87171',
+  info:    '#38BDF8',
 
-  // Text
-  text0: '#F1F5F9',   // primary headings
-  text1: '#CBD5E1',   // body
-  text2: '#94A3B8',   // secondary/meta
-  text3: '#64748B',   // disabled/hint
-  text4: '#475569',   // placeholder
+  // ── Text ──────────────────────────────────────────────────────────────────
+  text0: '#F0F4FF',  // primary — headings
+  text1: '#C8D3E8',  // body
+  text2: '#8FA0BC',  // secondary
+  text3: '#5B6E8A',  // disabled / hint
+  text4: '#3D5069',  // placeholder
 
-  // Status
-  success: '#34D399',
-  warning: '#FBBF24',
-  danger:  '#F87171',
-
-  // Category colors for skills
+  // ── Skill category palette ────────────────────────────────────────────────
   skill: {
-    webDev:    '#38BDF8',
-    aiml:      '#A78BFA',
-    cloud:     '#34D399',
-    dsa:       '#818CF8',
-    uiux:      '#F472B6',
-    default:   '#94A3B8',
+    'Web Development': '#38BDF8',
+    'AI/ML':           '#A78BFA',
+    'Cloud':           '#34D399',
+    'DSA':             '#818CF8',
+    'UI/UX':           '#F472B6',
+    'Data Science':    '#FB923C',
+    'Mobile':          '#4ADE80',
+    'DevOps':          '#94A3B8',
+    default:           '#64748B',
   },
 } as const;
 
 export const Spacing = {
-  xs:  4,
-  sm:  8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  xs:   4,
+  sm:   8,
+  md:  12,
+  lg:  16,
+  xl:  20,
   xxl: 28,
-  xxxl: 36,
+  xxxl:36,
 } as const;
 
 export const Radius = {
-  sm:  8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  xs:   6,
+  sm:   8,
+  md:  12,
+  lg:  16,
+  xl:  20,
+  xxl: 24,
   full: 9999,
 } as const;
 
 export const Typography = {
-  // Display — hero headings
-  display: { fontSize: 32, fontWeight: '800' as const, letterSpacing: -0.5, lineHeight: 38 },
-  // H1 — screen titles
-  h1: { fontSize: 26, fontWeight: '800' as const, letterSpacing: -0.3, lineHeight: 32 },
-  // H2 — section headers
-  h2: { fontSize: 20, fontWeight: '700' as const, letterSpacing: -0.2, lineHeight: 26 },
-  // H3 — card titles
-  h3: { fontSize: 17, fontWeight: '700' as const, letterSpacing: -0.1, lineHeight: 22 },
-  // Label — eyebrows / caps
-  label: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 1.2, textTransform: 'uppercase' as const },
-  // Body
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  bodySm: { fontSize: 13, fontWeight: '400' as const, lineHeight: 19 },
-  // UI — buttons, tabs
-  ui: { fontSize: 15, fontWeight: '700' as const },
-  uiSm: { fontSize: 13, fontWeight: '600' as const },
-  // Mono — numbers, stats
-  mono: { fontSize: 13, fontWeight: '600' as const },
-  // Huge numbers
-  stat: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.5 },
-  statSm: { fontSize: 22, fontWeight: '800' as const, letterSpacing: -0.3 },
+  display: { fontSize: 34, fontWeight: '800' as const, letterSpacing: -0.8, lineHeight: 40 },
+  h1:      { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.5, lineHeight: 34 },
+  h2:      { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3, lineHeight: 28 },
+  h3:      { fontSize: 17, fontWeight: '700' as const, letterSpacing: -0.1, lineHeight: 23 },
+  h4:      { fontSize: 15, fontWeight: '600' as const, lineHeight: 21 },
+  label:   { fontSize: 11, fontWeight: '700' as const, letterSpacing: 1.2, textTransform: 'uppercase' as const },
+  body:    { fontSize: 15, fontWeight: '400' as const, lineHeight: 23 },
+  bodySm:  { fontSize: 13, fontWeight: '400' as const, lineHeight: 19 },
+  ui:      { fontSize: 15, fontWeight: '700' as const, letterSpacing: 0.1 },
+  uiSm:    { fontSize: 13, fontWeight: '600' as const },
+  mono:    { fontSize: 13, fontWeight: '600' as const },
+  stat:    { fontSize: 30, fontWeight: '800' as const, letterSpacing: -0.8 },
+  statSm:  { fontSize: 22, fontWeight: '800' as const, letterSpacing: -0.4 },
 } as const;
 
 export const Shadow = {
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 7,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 12,
   },
   accent: {
     shadowColor: '#2DD4BF',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 9,
+  },
+  xp: {
+    shadowColor: '#818CF8',
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 14,
+    elevation: 9,
   },
 } as const;
