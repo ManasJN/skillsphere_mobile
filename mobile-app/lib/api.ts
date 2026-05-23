@@ -73,10 +73,12 @@ export const skillsAPI = {
 };
 
 export const goalsAPI = {
-  getMine: (params?: Record<string, string>) => api.get('/goals', { params }),
-  create: (data: Record<string, unknown>) => api.post('/goals', data),
-  update: (id: string, data: Record<string, unknown>) => api.put(`/goals/${id}`, data),
-  delete: (id: string) => api.delete(`/goals/${id}`),
+  getMine:          (params?: Record<string, string>) => api.get('/goals', { params }),
+  create:           (data: Record<string, unknown>)   => api.post('/goals', data),
+  update:           (id: string, data: Record<string, unknown>) => api.put(`/goals/${id}`, data),
+  delete:           (id: string) => api.delete(`/goals/${id}`),
+  toggleMilestone:  (goalId: string, milestoneId: string) =>
+    api.put(`/goals/${goalId}/milestones/${milestoneId}/toggle`),
 };
 
 export const projectsAPI = {

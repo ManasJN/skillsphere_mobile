@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { notificationsAPI } from '@/lib/api';
-import { Colors, Radius, Shadow, Typography } from '@/lib/theme';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Typography } from '@/lib/theme';
 import { Badge, BadgeColor, Card, EmptyState, ErrorBanner, Row, Skeleton } from '@/components/ui';
 
 type Notification = {
@@ -113,7 +113,7 @@ export default function NotificationsScreen() {
           <NotifSkeleton />
         ) : items.length === 0 ? (
           <Card>
-            <EmptyState emoji="🔔" title="All caught up" body="Goal updates, achievements, and announcements will appear here." />
+            <EmptyState title="All caught up" body="Goal updates, achievements, and announcements will appear here." />
           </Card>
         ) : (
           <>
@@ -150,7 +150,7 @@ function NotifGroup({ title, items, onMarkRead }: {
 const G = StyleSheet.create({
   wrap: { gap: 10 },
   groupTitle: { ...Typography.label, color: Colors.text3, paddingHorizontal: 2 },
-  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden' },
+  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.lg, borderWidth: 1, overflow: 'hidden' },
   divider: { backgroundColor: Colors.border0, height: 1 },
 });
 
@@ -175,7 +175,7 @@ function NotifRow({ notif, onMarkRead }: { notif: Notification; onMarkRead: (id:
 }
 const nS = StyleSheet.create({
   row: { flexDirection: 'row', gap: 0, padding: 16, paddingLeft: 20 },
-  rowUnread: { backgroundColor: '#090D16' },
+  rowUnread: { backgroundColor: Colors.accentDim },
   rowPressed: { backgroundColor: Colors.bg3 },
   dot: {
     backgroundColor: Colors.accent, borderRadius: Radius.full,
@@ -191,7 +191,7 @@ const nS = StyleSheet.create({
 
 function NotifSkeleton() {
   return (
-    <View style={{ backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden' }}>
+    <View style={{ backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.lg, borderWidth: 1, overflow: 'hidden' }}>
       {Array.from({ length: 5 }).map((_, i) => (
         <View key={i}>
           {i > 0 && <View style={{ backgroundColor: Colors.border0, height: 1 }} />}
@@ -208,10 +208,10 @@ function NotifSkeleton() {
 
 const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 14, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 20 },
+  content: { gap: 14, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 20 },
   header: { justifyContent: 'space-between', alignItems: 'flex-end' },
   eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
-  title: { color: Colors.text0, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
+  title: { ...Typography.h2, color: Colors.text0 },
   markAllBtn: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },
   markAllTxt: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '600' },
   unreadBanner: { alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: 10 },

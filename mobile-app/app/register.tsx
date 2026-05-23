@@ -89,7 +89,7 @@ export default function RegisterScreen() {
                     style={[styles.roleBtn, active && styles.roleBtnActive]}>
                     <View style={[styles.roleIcon, active && styles.roleIconActive]}>
                       <Text style={[styles.roleEmoji]}>
-                        {item === 'student' ? '🎓' : '👨‍🏫'}
+                        {item === 'student' ? 'Student' : 'Mentor'}
                       </Text>
                     </View>
                     <Text style={[styles.roleBtnText, active && styles.roleBtnTextActive]}>
@@ -176,7 +176,7 @@ export default function RegisterScreen() {
                 pressed && !isLoading && styles.ctaPressed,
               ]}>
               {isLoading
-                ? <ActivityIndicator color={Colors.bg0} size="small" />
+                ? <ActivityIndicator color={Colors.bg1} size="small" />
                 : <Text style={styles.ctaText}>Create Account →</Text>}
             </Pressable>
           </View>
@@ -209,17 +209,16 @@ const styles = StyleSheet.create({
 
   brandRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   logoMark: {
-    alignItems: 'center', backgroundColor: Colors.accentSoft, borderColor: '#1A4A40',
+    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
     borderRadius: Radius.sm, borderWidth: 1, height: 38, justifyContent: 'center', width: 38,
   },
   logoInner: {
-    backgroundColor: Colors.accent, borderRadius: 3, height: 18,
-    transform: [{ rotate: '45deg' }], width: 18,
+    backgroundColor: Colors.accent, borderRadius: 2, height: 14, width: 14,
   },
-  brandName: { ...Typography.h2, color: Colors.text0, fontWeight: '800' },
+  brandName: { ...Typography.h2, color: Colors.text0 },
 
   headlineBlock: { gap: 8 },
-  headline: { color: Colors.text0, fontSize: 40, fontWeight: '800', letterSpacing: -1, lineHeight: 46 },
+  headline: { color: Colors.text0, fontSize: 28, fontWeight: '700', letterSpacing: -0.4, lineHeight: 34 },
   sub: { ...Typography.body, color: Colors.text2 },
 
   // Role
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 8, paddingVertical: 16,
     position: 'relative',
   },
-  roleBtnActive: { backgroundColor: Colors.accentDim, borderColor: '#2DD4BF' },
+  roleBtnActive: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
   roleIcon: {
     alignItems: 'center', backgroundColor: Colors.bg4, borderRadius: Radius.sm,
     height: 44, justifyContent: 'center', width: 44,
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.accent, borderRadius: 10,
     height: 20, justifyContent: 'center', position: 'absolute', right: 10, top: 10, width: 20,
   },
-  roleCheckText: { color: Colors.bg0, fontSize: 11, fontWeight: '800' },
+  roleCheckText: { color: Colors.bg1, fontSize: 11, fontWeight: '600' },
 
   // Form
   form: { gap: 18 },
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
   eyeText: { ...Typography.uiSm, color: Colors.accentLight },
 
   errorBox: {
-    alignItems: 'flex-start', backgroundColor: '#1C0000', borderColor: '#4C0519',
+    alignItems: 'flex-start', backgroundColor: '#1A0808', borderColor: '#3D1010',
     borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: Spacing.md,
   },
   errorDot: { color: Colors.danger, fontSize: 10, marginTop: 3 },
@@ -271,13 +270,11 @@ const styles = StyleSheet.create({
 
   cta: {
     alignItems: 'center', backgroundColor: Colors.accent, borderRadius: Radius.md,
-    elevation: 8, height: 54, justifyContent: 'center', marginTop: 4,
-    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35, shadowRadius: 16,
+    elevation: 3, height: 50, justifyContent: 'center', marginTop: 4,
   },
   ctaDisabled: { opacity: 0.45, shadowOpacity: 0 },
   ctaPressed: { opacity: 0.85, transform: [{ scale: 0.975 }] },
-  ctaText: { color: Colors.bg0, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+  ctaText: { color: Colors.bg1, fontSize: 15, fontWeight: '700', letterSpacing: 0.1 },
 
   footer: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
   footerText: { ...Typography.bodySm, color: Colors.text3 },

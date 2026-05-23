@@ -14,7 +14,7 @@ type Leader = {
   xpPoints?: number; streakDays?: number; verificationStatus?: string;
 };
 
-const MEDAL = ['🥇', '🥈', '🥉'];
+const MEDAL = ['1', '2', '3'];
 
 function initials(name = '') {
   return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || '??';
@@ -57,7 +57,7 @@ export default function LeaderboardScreen() {
         <View style={S.header}>
           <Text style={S.eyebrow}>This Week</Text>
           <Text style={S.title}>Leaderboard</Text>
-          <Text style={S.sub}>Ranked by XP earned. Keep the streak alive. 🔥</Text>
+          <Text style={S.sub}>Ranked by XP earned this week.</Text>
         </View>
 
         {loading ? (
@@ -65,7 +65,7 @@ export default function LeaderboardScreen() {
         ) : error ? (
           <ErrorBanner message={error} />
         ) : leaders.length === 0 ? (
-          <Card><EmptyState emoji="🏆" title="No rankings yet" body="Be the first to earn XP and claim the top spot!" /></Card>
+          <Card><EmptyState title="No rankings yet" body="Be the first to earn XP and claim the top spot!" /></Card>
         ) : (
           <>
             {/* ── Podium ── */}
@@ -109,7 +109,7 @@ function Pillar({ leader, rank, hero, isMe }: { leader: Leader; rank: number; he
       <Text style={pS.xpLbl}>XP</Text>
       {leader.streakDays ? (
         <View style={pS.streakPill}>
-          <Text style={pS.streakTxt}>🔥{leader.streakDays}d</Text>
+          <Text style={pS.streakTxt}>{leader.streakDays}d streak</Text>
         </View>
       ) : null}
     </View>
@@ -118,20 +118,20 @@ function Pillar({ leader, rank, hero, isMe }: { leader: Leader; rank: number; he
 const pS = StyleSheet.create({
   pillar: {
     alignItems: 'center', backgroundColor: Colors.bg2, borderColor: Colors.border1,
-    borderRadius: Radius.xl, borderWidth: 1, flex: 1, gap: 6,
+    borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 6,
     paddingHorizontal: 8, paddingVertical: 18,
   },
   pillarHero: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, marginHorizontal: -4, paddingVertical: 24, zIndex: 1 },
-  pillarMe: { borderColor: Colors.xp },
+  pillarMe: { borderColor: Colors.accent },
   medal: { fontSize: 26, marginBottom: 2 },
   avatar: { alignItems: 'center', backgroundColor: Colors.bg4, borderColor: Colors.border2, borderRadius: Radius.md, borderWidth: 1, height: 46, justifyContent: 'center', width: 46 },
   avatarHero: { backgroundColor: Colors.accentSoft, borderColor: Colors.accentMid, height: 54, width: 54, borderRadius: Radius.lg },
-  avatarMe: { borderColor: Colors.xp },
-  avatarTxt: { color: Colors.text2, fontSize: 15, fontWeight: '800' },
+  avatarMe: { borderColor: Colors.accent },
+  avatarTxt: { color: Colors.text2, fontSize: 15, fontWeight: '700' },
   avatarTxtHero: { color: Colors.accentLight, fontSize: 18 },
   name: { ...Typography.uiSm, color: Colors.text1, textAlign: 'center' },
   nameHero: { color: Colors.text0, fontWeight: '700' },
-  xp: { color: Colors.text0, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  xp: { color: Colors.text0, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
   xpLbl: { ...Typography.label, color: Colors.text3, fontSize: 9, marginTop: -2 },
   streakPill: { backgroundColor: Colors.bg4, borderRadius: Radius.full, paddingHorizontal: 8, paddingVertical: 3 },
   streakTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
@@ -165,7 +165,7 @@ const rS = StyleSheet.create({
   rankMe: { color: Colors.accentLight },
   avatar: { alignItems: 'center', backgroundColor: Colors.bg4, borderRadius: Radius.sm, height: 38, justifyContent: 'center', width: 38 },
   avatarMe: { backgroundColor: Colors.accentSoft },
-  avatarTxt: { color: Colors.text2, fontSize: 13, fontWeight: '800' },
+  avatarTxt: { color: Colors.text2, fontSize: 13, fontWeight: '700' },
   avatarTxtMe: { color: Colors.accentLight },
   info: { flex: 1, gap: 2 },
   name: { ...Typography.uiSm, color: Colors.text0 },
@@ -174,7 +174,7 @@ const rS = StyleSheet.create({
   youTxt: { ...Typography.label, color: Colors.accentLight, fontSize: 9 },
   dept: { ...Typography.bodySm, color: Colors.text3 },
   right: { alignItems: 'flex-end', gap: 1 },
-  xp: { color: Colors.text0, fontSize: 15, fontWeight: '800' },
+  xp: { color: Colors.text0, fontSize: 15, fontWeight: '700' },
   xpMe: { color: Colors.accentLight },
   xpLbl: { ...Typography.label, color: Colors.text3, fontSize: 9 },
 });
@@ -209,9 +209,9 @@ const S = StyleSheet.create({
   content: { gap: 16, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 20 },
   header: { gap: 6 },
   eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
-  title: { color: Colors.text0, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
+  title: { ...Typography.h2, color: Colors.text0 },
   sub: { ...Typography.bodySm, color: Colors.text3, lineHeight: 20 },
   podiumWrap: { alignItems: 'flex-end', flexDirection: 'row', gap: 8 },
-  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden', ...Shadow.sm },
+  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.lg, borderWidth: 1, overflow: 'hidden', ...Shadow.sm },
   divider: { backgroundColor: Colors.border0, height: 1 },
 });

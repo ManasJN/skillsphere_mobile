@@ -1,297 +1,542 @@
-import { ReactNode } from 'react';
+/**
+ * SkillSphere UI Primitives — v3
+ * Single source of truth. One file, one import path: @/components/ui
+ *
+ * Design principles:
+ *  - No glow, no gradients, no decorative effects
+ *  - Notion/Linear/Todoist feel — restrained, practical, human
+ *  - Every component references only design tokens from @/lib/theme
+ */
+
+import { ReactNode, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
-  StyleProp,
   StyleSheet,
   Text,
-  TextStyle,
+  TextInput,
   View,
-  ViewStyle,
+  type PressableProps,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 
-import { Colors, Radius, Shadow, Typography } from '@/lib/theme';
+import { Colors, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
 
-const badgeColors = {
-  teal: { background: '#043737', text: '#7DD3FC' },
-  indigo: { background: '#1E1B4A', text: '#C7D2FE' },
-  blue: { background: '#0D3B66', text: '#BFDBFE' },
-  green: { background: '#052E14', text: '#86EFAC' },
-  amber: { background: '#4C2A05', text: '#FCD34D' },
-  red: { background: '#4C0505', text: '#FCA5A5' },
-  muted: { background: Colors.bg3, text: Colors.text3 },
-};
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
-type BadgeColor = keyof typeof badgeColors;
-
-export function Card({
-  children,
-  style,
-}: {
+type CardProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
-}) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  /** Slight left-border accent — for reminders, warnings, highlights */
+  accent?: boolean;
+  /** Transparent background — for inline groupings that shouldn't look like cards */
+  flat?: boolean;
+};
+export function Card({ children, style, accent, flat }: CardProps) {
+  return (
+    <View style={[S.card, accent && S.cardAccent, flat && S.cardFlat, style]}>
+      {children}
+    </View>
+  );
 }
 
-export function Badge({
-  label,
-  color = 'muted',
-  style,
-}: {
+// ─── Button ───────────────────────────────────────────────────────────────────
+
+type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'tinted';
+type ButtonProps = {
+  label: string;
+  onPress: () => void;
+  variant?: BtnVariant;
+  loading?: boolean;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+  /** Compact size — for inline/card use */
+  small?: boolean;
+  /** Full-width */
+  full?: boolean;
+};
+export function Button({
+  label, onPress, variant = 'primary', loading, disabled, style, small, full,
+}: ButtonProps) {
+  const off = disabled || loading;
+  return (
+    <Pressable
+      disabled={off}
+      onPress={onPress}
+      style={({ pressed }) => [
+        S.btn,
+        small && S.btnSm,
+        full && S.btnFull,
+        variant === 'primary'   && S.btnPrimary,
+        variant === 'secondary' && S.btnSecondary,
+        variant === 'ghost'     && S.btnGhost,
+        variant === 'danger'    && S.btnDanger,
+        variant === 'tinted'    && S.btnTinted,
+        off     && S.btnOff,
+        pressed && !off && S.btnPressed,
+        style,
+      ]}>
+      {loading
+        ? <ActivityIndicator color={variant === 'primary' ? Colors.bg1 : Colors.accent} size="small" />
+        : <Text style={[
+            S.btnTxt, small && S.btnTxtSm,
+            variant === 'primary'   && S.btnTxtPrimary,
+            variant === 'secondary' && S.btnTxtSecondary,
+            variant === 'ghost'     && S.btnTxtGhost,
+            variant === 'danger'    && S.btnTxtDanger,
+            variant === 'tinted'    && S.btnTxtTinted,
+          ]}>{label}</Text>}
+    </Pressable>
+  );
+}
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+
+type InputProps = {
+  label?: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'numeric';
+  autoCapitalize?: 'none' | 'words' | 'sentences';
+  editable?: boolean;
+  multiline?: boolean;
+  numberOfLines?: number;
+  style?: StyleProp<ViewStyle>;
+  rightElement?: ReactNode;
+};
+export function Input({
+  label, value, onChangeText, placeholder, secureTextEntry,
+  keyboardType, autoCapitalize, editable = true,
+  multiline, numberOfLines, style, rightElement,
+}: InputProps) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={[S.inputWrap, style]}>
+      {label ? <Text style={S.inputLabel}>{label}</Text> : null}
+      <View style={[S.inputBox, focused && S.inputBoxFocused, !editable && S.inputBoxDisabled]}>
+        <TextInput
+          autoCapitalize={autoCapitalize ?? 'none'}
+          autoCorrect={false}
+          editable={editable}
+          keyboardType={keyboardType ?? 'default'}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          onBlur={() => setFocused(false)}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.text4}
+          secureTextEntry={secureTextEntry}
+          style={[S.inputText, multiline && S.inputMultiline]}
+          value={value}
+        />
+        {rightElement ? <View style={S.inputRight}>{rightElement}</View> : null}
+      </View>
+    </View>
+  );
+}
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
+
+export type BadgeColor =
+  'teal' | 'indigo' | 'amber' | 'red' | 'green' | 'muted' | 'blue' | 'pink' | 'orange';
+
+type BadgeProps = {
   label: string;
   color?: BadgeColor;
   style?: StyleProp<ViewStyle>;
-}) {
-  const palette = badgeColors[color] ?? badgeColors.muted;
+};
+export function Badge({ label, color = 'muted', style }: BadgeProps) {
   return (
-    <View style={[styles.badge, { backgroundColor: palette.background }, style]}>
-      <Text style={[styles.badgeText, { color: palette.text }]} numberOfLines={1}>
-        {label}
+    <View style={[S.badge, badgeBg[color], style]}>
+      <Text style={[S.badgeTxt, badgeFg[color]]}>{label}</Text>
+    </View>
+  );
+}
+
+// Muted, naturalistic badge tones — no neon
+const badgeBg: Record<BadgeColor, ViewStyle> = {
+  teal:   { backgroundColor: '#0C1F26', borderColor: '#1A3D4A' },
+  indigo: { backgroundColor: '#13152A', borderColor: '#252854' },
+  amber:  { backgroundColor: '#1E1600', borderColor: '#3D2E00' },
+  red:    { backgroundColor: '#1E0A0A', borderColor: '#3D1414' },
+  green:  { backgroundColor: '#0A1A12', borderColor: '#163324' },
+  muted:  { backgroundColor: Colors.bg4, borderColor: Colors.border1 },
+  blue:   { backgroundColor: '#0C1826', borderColor: '#1A3048' },
+  pink:   { backgroundColor: '#1A0A16', borderColor: '#381426' },
+  orange: { backgroundColor: '#1A0E00', borderColor: '#382000' },
+};
+const badgeFg: Record<BadgeColor, TextStyle> = {
+  teal:   { color: '#6EC8D4' },
+  indigo: { color: '#9B9FDC' },
+  amber:  { color: '#CCA042' },
+  red:    { color: '#C87070' },
+  green:  { color: '#5FAE80' },
+  muted:  { color: Colors.text2 },
+  blue:   { color: Colors.accentLight },
+  pink:   { color: '#C47AB0' },
+  orange: { color: '#C8906A' },
+};
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
+
+type AvatarProps = {
+  initials: string;
+  size?: number;
+  bg?: string;
+  textColor?: string;
+};
+export function Avatar({ initials, size = 44, bg, textColor }: AvatarProps) {
+  return (
+    <View style={[
+      S.avatar,
+      { width: size, height: size, borderRadius: Radius.sm },
+      bg ? { backgroundColor: bg } : null,
+    ]}>
+      <Text style={[
+        S.avatarTxt,
+        { fontSize: Math.max(11, Math.floor(size * 0.32)) },
+        textColor ? { color: textColor } : null,
+      ]}>
+        {initials}
       </Text>
     </View>
   );
 }
 
-export function Row({
-  children,
-  style,
-}: {
-  children: ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
-  return <View style={[styles.row, style]}>{children}</View>;
-}
+// ─── EmptyState ───────────────────────────────────────────────────────────────
 
-export function EmptyState({
-  emoji,
-  title,
-  body,
-  style,
-  titleStyle,
-  bodyStyle,
-}: {
+type EmptyStateProps = {
+  icon?: string;
+  /** Kept for backward-compat — rendered as text if passed */
   emoji?: string;
   title: string;
   body?: string;
-  style?: StyleProp<ViewStyle>;
-  titleStyle?: StyleProp<TextStyle>;
-  bodyStyle?: StyleProp<TextStyle>;
-}) {
+};
+export function EmptyState({ icon, emoji, title, body }: EmptyStateProps) {
+  const sym = icon ?? emoji;
   return (
-    <View style={[styles.emptyState, style]}>
-      <View style={styles.emptyIcon}>
-        <Text style={styles.emptyEmoji}>{emoji ?? '✨'}</Text>
-      </View>
-      <Text style={[styles.emptyTitle, titleStyle]}>{title}</Text>
-      {body ? <Text style={[styles.emptyBody, bodyStyle]}>{body}</Text> : null}
+    <View style={S.empty}>
+      {sym ? <Text style={S.emptyIcon}>{sym}</Text> : null}
+      <Text style={S.emptyTitle}>{title}</Text>
+      {body ? <Text style={S.emptyBody}>{body}</Text> : null}
     </View>
   );
 }
 
-export function Avatar({
-  initials,
-  size = 48,
-  style,
-}: {
-  initials: string;
-  size?: number;
-  style?: StyleProp<ViewStyle>;
-}) {
-  return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }, style]}>
-      <Text style={[styles.avatarText, { fontSize: Math.max(14, size / 2.8) }]}>{initials}</Text>
-    </View>
-  );
-}
+// ─── SectionHeader ────────────────────────────────────────────────────────────
 
-export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.divider, style]} />;
-}
-
-export function ProgressBar({
-  pct,
-  color = Colors.accent,
-  height = 6,
-  style,
-}: {
-  pct: number;
-  color?: string;
-  height?: number;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const progress = Math.min(100, Math.max(0, pct));
-  return (
-    <View style={[styles.progressTrack, { height }, style]}>
-      <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: color, height }]} />
-    </View>
-  );
-}
-
-export function SectionHeader({
-  title,
-  actionLabel,
-  onAction,
-  style,
-}: {
+type SectionHeaderProps = {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
   style?: StyleProp<ViewStyle>;
-}) {
+};
+export function SectionHeader({ title, actionLabel, onAction, style }: SectionHeaderProps) {
   return (
-    <View style={[styles.sectionHeader, style]}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={[S.secHead, style]}>
+      <Text style={S.secHeadTitle}>{title}</Text>
       {actionLabel && onAction ? (
-        <Pressable onPress={onAction} style={styles.sectionAction}>
-          <Text style={styles.sectionActionText}>{actionLabel}</Text>
+        <Pressable onPress={onAction} hitSlop={12}>
+          <Text style={S.secHeadAction}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
 
-export function StatChip({
-  label,
-  value,
-  accent,
-  style,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
+// ─── ProgressBar ─────────────────────────────────────────────────────────────
+
+type ProgressProps = {
+  pct: number;
+  color?: string;
+  height?: number;
   style?: StyleProp<ViewStyle>;
-}) {
+};
+export function ProgressBar({ pct, color = Colors.accent, height = 5, style }: ProgressProps) {
+  const w = `${Math.max(0, Math.min(100, pct))}%` as const;
   return (
-    <View style={[styles.statChip, accent && styles.statChipAccent, style]}>
-      <Text style={[styles.statChipValue, accent && styles.statChipValueAccent]}>{value}</Text>
-      <Text style={[styles.statChipLabel, accent && styles.statChipLabelAccent]}>{label}</Text>
+    <View style={[S.progTrack, { height }, style]}>
+      <View style={[S.progFill, { backgroundColor: color, width: w, height }]} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+// ─── StatTile — named StatChip for compat, but works as a proper stat tile ───
+
+type StatTileProps = {
+  label: string;
+  value: string;
+  accent?: boolean;
+  style?: StyleProp<ViewStyle>;
+  sub?: string;
+};
+export function StatChip({ label, value, accent, style, sub }: StatTileProps) {
+  return (
+    <View style={[S.statTile, accent && S.statTileAccent, style]}>
+      <Text style={[S.statVal, accent && S.statValAccent]}>{value}</Text>
+      <Text style={S.statLbl}>{label}</Text>
+      {sub ? <Text style={S.statSub}>{sub}</Text> : null}
+    </View>
+  );
+}
+// Alias for new code
+export const StatTile = StatChip;
+
+// ─── GoalItem ─────────────────────────────────────────────────────────────────
+
+type GoalItemProps = {
+  title: string;
+  progress: number;
+  priority?: 'high' | 'medium' | 'low';
+  deadline?: string;
+  done?: boolean;
+  onPress?: () => void;
+};
+export function GoalItem({ title, progress, priority, deadline, done, onPress }: GoalItemProps) {
+  const pColor = priorityAccent(priority);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [S.goalItem, pressed && onPress && S.goalItemPressed]}>
+      {/* Left priority stripe */}
+      <View style={[S.goalStripe, { backgroundColor: pColor }]} />
+      <View style={S.goalBody}>
+        <View style={S.goalTop}>
+          <Text style={[S.goalTitle, done && S.goalTitleDone]} numberOfLines={1}>{title}</Text>
+          {deadline ? <Text style={S.goalDate}>{deadline}</Text> : null}
+        </View>
+        {!done && (
+          <View style={S.goalProgRow}>
+            <ProgressBar pct={progress} color={pColor} height={3} style={{ flex: 1 }} />
+            <Text style={[S.goalPct, { color: pColor }]}>{progress}%</Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+function priorityAccent(p?: string) {
+  return { high: Colors.danger, medium: Colors.warning, low: Colors.success }[p ?? ''] ?? Colors.text3;
+}
+
+// ─── Row / Divider ────────────────────────────────────────────────────────────
+
+export function Row({
+  children, style,
+}: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[S.row, style]}>{children}</View>;
+}
+
+export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
+  return <View style={[S.divider, style]} />;
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+type SkeletonProps = {
+  width?: number | string;
+  height?: number;
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+};
+export function Skeleton({
+  width = '100%', height = 14, radius = Radius.sm, style,
+}: SkeletonProps) {
+  return <View style={[S.skeleton, { width: width as number, height, borderRadius: radius }, style]} />;
+}
+
+export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[S.card, style, { gap: 10 }]}>
+      <Skeleton height={13} width="55%" />
+      <Skeleton height={10} width="90%" />
+      <Skeleton height={10} width="70%" />
+    </View>
+  );
+}
+
+// ─── ErrorBanner ─────────────────────────────────────────────────────────────
+
+export function ErrorBanner({ message }: { message: string }) {
+  return (
+    <View style={S.errBanner}>
+      <View style={S.errDot} />
+      <Text style={S.errMsg}>{message}</Text>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const S = StyleSheet.create({
+  // Card
   card: {
     backgroundColor: Colors.bg2,
     borderColor: Colors.border1,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    padding: 16,
+    padding: Spacing.lg,
+    ...Shadow.sm,
   },
-  badge: {
-    borderRadius: Radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minHeight: 26,
+  cardAccent: {
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.accent,
+    borderRadius: 0,
+    borderTopRightRadius: Radius.lg,
+    borderBottomRightRadius: Radius.lg,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  cardFlat: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+    padding: 0,
+  },
+
+  // Button
+  btn: {
+    alignItems: 'center',
+    borderRadius: Radius.md,
+    height: 50,
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  badgeText: {
-    ...Typography.bodySm,
-    color: Colors.text0,
-    letterSpacing: 0.2,
-    textTransform: 'capitalize',
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  emptyState: {
-    alignItems: 'center',
-    backgroundColor: Colors.bg3,
-    borderColor: Colors.border0,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    gap: 10,
-    padding: 18,
-  },
-  emptyIcon: {
-    alignItems: 'center',
-    backgroundColor: Colors.bg4,
-    borderRadius: Radius.full,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
-  },
-  emptyEmoji: { fontSize: 24 },
-  emptyTitle: {
-    ...Typography.h3,
-    color: Colors.text0,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    ...Typography.bodySm,
-    color: Colors.text3,
-    textAlign: 'center',
-  },
-  avatar: {
-    alignItems: 'center',
-    backgroundColor: Colors.bg4,
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: Colors.text0,
-    fontWeight: '800',
-  },
-  divider: {
-    backgroundColor: Colors.border0,
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
-  },
-  progressTrack: {
-    backgroundColor: Colors.bg4,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    borderRadius: 999,
-  },
-  sectionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    ...Typography.h3,
-    color: Colors.text0,
-  },
-  sectionAction: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  sectionActionText: {
-    ...Typography.uiSm,
-    color: Colors.accentLight,
-  },
-  statChip: {
+  btnSm:   { height: 36, paddingHorizontal: 14, borderRadius: Radius.sm },
+  btnFull: { width: '100%' },
+  btnPrimary:   { backgroundColor: Colors.accent },
+  btnSecondary: { backgroundColor: Colors.bg3, borderColor: Colors.border2, borderWidth: 1 },
+  btnGhost:     { backgroundColor: 'transparent', borderColor: Colors.border2, borderWidth: 1 },
+  btnDanger:    { backgroundColor: '#1C0A0A', borderColor: '#3D1414', borderWidth: 1 },
+  btnTinted:    { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderWidth: 1 },
+  btnOff:       { opacity: 0.4 },
+  btnPressed:   { opacity: 0.75 },
+  btnTxt:       { ...Typography.ui, color: Colors.text0 },
+  btnTxtSm:     { fontSize: 13, fontWeight: '500' as const },
+  btnTxtPrimary:   { color: Colors.bg1, fontWeight: '700' as const },
+  btnTxtSecondary: { color: Colors.text0 },
+  btnTxtGhost:     { color: Colors.accentLight },
+  btnTxtDanger:    { color: Colors.danger },
+  btnTxtTinted:    { color: Colors.accentLight },
+
+  // Input
+  inputWrap:        { gap: 6 },
+  inputLabel:       { ...Typography.uiSm, color: Colors.text1, fontWeight: '500' as const },
+  inputBox: {
     alignItems: 'center',
     backgroundColor: Colors.bg3,
     borderColor: Colors.border1,
-    borderRadius: Radius.full,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    flexDirection: 'row',
   },
-  statChipAccent: {
-    backgroundColor: Colors.accentDim,
-    borderColor: Colors.accent,
+  inputBoxFocused:  { borderColor: Colors.accent },
+  inputBoxDisabled: { opacity: 0.5 },
+  inputText:        { color: Colors.text0, flex: 1, fontSize: 15, height: 50, paddingHorizontal: 14 },
+  inputMultiline:   { height: undefined, minHeight: 90, paddingTop: 13, textAlignVertical: 'top' },
+  inputRight:       { paddingRight: 12 },
+
+  // Badge
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  statChipValue: {
-    ...Typography.statSm,
-    color: Colors.text0,
+  badgeTxt: {
+    ...Typography.label,
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'none' as const,
   },
-  statChipValueAccent: {
-    color: Colors.accentLight,
+
+  // Avatar
+  avatar: {
+    alignItems: 'center',
+    backgroundColor: Colors.accentSoft,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accentMid,
   },
-  statChipLabel: {
-    ...Typography.bodySm,
-    color: Colors.text3,
-    marginTop: 4,
+  avatarTxt: { color: Colors.accentLight, fontWeight: '600' as const },
+
+  // EmptyState
+  empty: { alignItems: 'center', gap: Spacing.sm, paddingVertical: 24 },
+  emptyIcon:  { fontSize: 28, marginBottom: 2 },
+  emptyTitle: { ...Typography.h4, color: Colors.text2, textAlign: 'center' },
+  emptyBody:  { ...Typography.bodySm, color: Colors.text3, maxWidth: 260, textAlign: 'center', lineHeight: 19 },
+
+  // SectionHeader
+  secHead:       { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+  secHeadTitle:  { ...Typography.h3, color: Colors.text0 },
+  secHeadAction: { ...Typography.uiSm, color: Colors.accent },
+
+  // ProgressBar
+  progTrack: { backgroundColor: Colors.bg4, borderRadius: Radius.full, overflow: 'hidden' },
+  progFill:  { borderRadius: Radius.full },
+
+  // StatTile
+  statTile: {
+    backgroundColor: Colors.bg3,
+    borderColor: Colors.border1,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: 2,
+    padding: Spacing.md,
   },
-  statChipLabelAccent: {
-    color: Colors.text3,
+  statTileAccent: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  statVal:        { ...Typography.statSm, color: Colors.text0 },
+  statValAccent:  { color: Colors.accentLight },
+  statLbl:        { ...Typography.bodyXs, color: Colors.text3, fontWeight: '500' as const },
+  statSub:        { ...Typography.bodyXs, color: Colors.text3, marginTop: 2 },
+
+  // GoalItem
+  goalItem: {
+    flexDirection: 'row',
+    backgroundColor: Colors.bg3,
+    borderColor: Colors.border1,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
+  goalItemPressed: { opacity: 0.75 },
+  goalStripe: { width: 3 },
+  goalBody:   { flex: 1, gap: 8, padding: 12 },
+  goalTop:    { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'space-between' },
+  goalTitle:  { ...Typography.h4, color: Colors.text0, flex: 1 },
+  goalTitleDone: { color: Colors.text3, textDecorationLine: 'line-through' as const },
+  goalDate:   { ...Typography.bodyXs, color: Colors.text3 },
+  goalProgRow:{ flexDirection: 'row', alignItems: 'center', gap: 8 },
+  goalPct:    { ...Typography.bodyXs, fontWeight: '600' as const, minWidth: 30, textAlign: 'right' },
+
+  // Row / Divider
+  row:     { alignItems: 'center', flexDirection: 'row' },
+  divider: { backgroundColor: Colors.border0, height: StyleSheet.hairlineWidth },
+
+  // Skeleton
+  skeleton: { backgroundColor: Colors.bg3 },
+
+  // Error
+  errBanner: {
+    alignItems: 'flex-start',
+    backgroundColor: '#1A0808',
+    borderColor: '#3D1010',
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+  },
+  errDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.danger, marginTop: 4, flexShrink: 0 },
+  errMsg: { ...Typography.bodySm, color: Colors.danger, flex: 1, lineHeight: 19 },
 });
 
-// Re-export a few newer UI primitives implemented in `app-ui.tsx`
-// so `@/components/ui` remains the single import surface used across screens.
-export { Skeleton, SkeletonCard, ErrorBanner } from './app-ui';

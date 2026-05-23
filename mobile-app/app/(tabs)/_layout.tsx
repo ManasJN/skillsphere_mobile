@@ -1,54 +1,47 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Radius } from '@/lib/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
+// Goals replaces notifications as a primary tab.
+// Notifications moves to the home screen header (more realistic pattern —
+// inbox is secondary, goals are primary).
 const TABS = [
-  { name: 'index',         title: 'Home',    icon: 'home',          iconOut: 'home-outline' },
-  { name: 'leaderboard',   title: 'Rank',    icon: 'trophy',        iconOut: 'trophy-outline' },
-  { name: 'opportunities', title: 'Explore', icon: 'briefcase',     iconOut: 'briefcase-outline' },
-  { name: 'notifications', title: 'Inbox',   icon: 'notifications', iconOut: 'notifications-outline' },
-  { name: 'profile',       title: 'Me',      icon: 'person-circle', iconOut: 'person-circle-outline' },
+  { name: 'index',         title: 'Home',    icon: 'home',          iconOut: 'home-outline'          },
+  { name: 'goals',         title: 'Goals',   icon: 'checkmark-done',iconOut: 'checkmark-done-outline' },
+  { name: 'opportunities', title: 'Explore', icon: 'compass',       iconOut: 'compass-outline'        },
+  { name: 'leaderboard',   title: 'Rank',    icon: 'podium',        iconOut: 'podium-outline'         },
+  { name: 'profile',       title: 'Profile', icon: 'person-circle', iconOut: 'person-circle-outline'  },
 ] as const;
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(8, insets.bottom);
-  const tabBarHeight = (Platform.OS === 'android' ? 64 : 76) + bottomInset;
+  const insets     = useSafeAreaInsets();
+  const safeBottom = Math.max(0, insets.bottom);
+  const tabBarHeight = 56 + safeBottom;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor:   Colors.accent,
         tabBarInactiveTintColor: Colors.text3,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          marginBottom: Platform.OS === 'android' ? 4 : 0,
-        },
+        tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 10,
+          left: 0, right: 0, bottom: 0,
           height: tabBarHeight,
-          paddingBottom: bottomInset + 8,
-          paddingTop: 8,
-          paddingHorizontal: 8,
+          paddingBottom: safeBottom,
+          paddingTop: 0,
           backgroundColor: Colors.bg2,
-          borderRadius: 16,
-          borderTopWidth: 0,
-          borderColor: 'transparent',
-          elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.18,
-          shadowRadius: 12,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border1,
+          elevation: 0,
+          shadowOpacity: 0,
         },
       }}>
       {TABS.map(({ name, title, icon, iconOut }) => (
@@ -67,6 +60,11 @@ export default function TabLayout() {
           }}
         />
       ))}
+      {/* Keep notifications registered so deep links don't break */}
+      <Tabs.Screen
+        name="notifications"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
@@ -84,8 +82,8 @@ const S = StyleSheet.create({
     alignItems: 'center',
     borderRadius: Radius.sm,
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
   iconWrapActive: {
     backgroundColor: Colors.accentDim,

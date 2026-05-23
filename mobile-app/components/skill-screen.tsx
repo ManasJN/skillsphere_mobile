@@ -1,20 +1,15 @@
+/**
+ * skill-screen.tsx — legacy wrapper, retained for compatibility.
+ * Use @/components/ui for all new components.
+ */
+export { Colors as palette } from '@/lib/theme';
+export { Card } from '@/components/ui';
+
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-export const palette = {
-  accent: '#5EEAD4',
-  accentSoft: '#134E4A',
-  background: '#080B12',
-  border: '#1E293B',
-  card: '#0F172A',
-  muted: '#94A3B8',
-  mutedDark: '#64748B',
-  surface: '#111827',
-  text: '#F8FAFC',
-  warning: '#FBBF24',
-};
+import { Colors, Typography, Spacing } from '@/lib/theme';
 
 type SkillScreenProps = {
   eyebrow: string;
@@ -26,16 +21,15 @@ type SkillScreenProps = {
 
 export function SkillScreen({ children, eyebrow, subtitle, title, refreshControl }: SkillScreenProps) {
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={S.safe}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={S.content}
         refreshControl={refreshControl}
-        showsVerticalScrollIndicator={false}
-        style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+        showsVerticalScrollIndicator={false}>
+        <View style={S.header}>
+          <Text style={S.eyebrow}>{eyebrow}</Text>
+          <Text style={S.title}>{title}</Text>
+          <Text style={S.subtitle}>{subtitle}</Text>
         </View>
         {children}
       </ScrollView>
@@ -43,45 +37,28 @@ export function SkillScreen({ children, eyebrow, subtitle, title, refreshControl
   );
 }
 
-export function Card({ children }: { children: ReactNode }) {
-  return <View style={styles.card}>{children}</View>;
-}
-
 export function SectionTitle({ children }: { children: ReactNode }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
+  return <Text style={S.sectionTitle}>{children}</Text>;
 }
 
 export function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View style={S.metric}>
+      <Text style={S.metricValue}>{value}</Text>
+      <Text style={S.metricLabel}>{label}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: palette.background, flex: 1 },
-  scrollView: { backgroundColor: palette.background },
-  content: { gap: 18, paddingBottom: 34, paddingHorizontal: 20, paddingTop: 20 },
-  header: { gap: 8 },
-  eyebrow: {
-    color: palette.accent,
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  title: { color: palette.text, fontSize: 32, fontWeight: '900' },
-  subtitle: { color: palette.muted, fontSize: 16, lineHeight: 23 },
-  card: {
-    backgroundColor: palette.card,
-    borderColor: palette.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 18,
-  },
-  sectionTitle: { color: palette.text, fontSize: 19, fontWeight: '800' },
-  metric: { flex: 1, gap: 4 },
-  metricValue: { color: palette.text, fontSize: 25, fontWeight: '900' },
-  metricLabel: { color: palette.mutedDark, fontSize: 13, fontWeight: '700' },
+const S = StyleSheet.create({
+  safe:    { backgroundColor: Colors.bg1, flex: 1 },
+  content: { gap: 16, paddingBottom: 34, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl },
+  header:  { gap: 6 },
+  eyebrow: { ...Typography.label, color: Colors.accent },
+  title:   { ...Typography.h1, color: Colors.text0 },
+  subtitle:{ ...Typography.body, color: Colors.text2 },
+  sectionTitle: { ...Typography.h3, color: Colors.text0 },
+  metric:  { flex: 1, gap: 3 },
+  metricValue: { ...Typography.statSm, color: Colors.text0 },
+  metricLabel: { ...Typography.bodyXs, color: Colors.text3, fontWeight: '600' as const },
 });

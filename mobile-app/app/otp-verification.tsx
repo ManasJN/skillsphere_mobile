@@ -80,7 +80,7 @@ export default function OtpVerificationScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconWrap}>
-              <Text style={styles.iconEmoji}>✉️</Text>
+              <Text style={styles.iconEmoji}>OTP</Text>
             </View>
             <Text style={styles.title}>Check your email</Text>
             <Text style={styles.sub}>
@@ -147,7 +147,7 @@ export default function OtpVerificationScreen() {
               pressed && canVerify && styles.ctaPressed,
             ]}>
             {isVerifying
-              ? <ActivityIndicator color={Colors.bg0} size="small" />
+              ? <ActivityIndicator color={Colors.bg1} size="small" />
               : <Text style={styles.ctaText}>Verify code</Text>}
           </Pressable>
 
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
 
   header: { alignItems: 'center', gap: 14, paddingTop: 16 },
   iconWrap: {
-    alignItems: 'center', backgroundColor: Colors.accentSoft, borderColor: '#1A4A40',
+    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
     borderRadius: Radius.xl, borderWidth: 1, height: 72, justifyContent: 'center', width: 72,
   },
   iconEmoji: { fontSize: 32 },
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     position: 'relative', width: 48,
   },
   otpBoxActive: { borderColor: Colors.accent },
-  otpBoxFilled: { backgroundColor: Colors.accentDim, borderColor: '#2DD4BF' },
-  otpChar: { color: Colors.text0, fontSize: 24, fontWeight: '800' },
+  otpBoxFilled: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  otpChar: { color: Colors.text0, fontSize: 24, fontWeight: '700' },
   cursor: {
     backgroundColor: Colors.accent, borderRadius: 1,
     bottom: 10, height: 2, position: 'absolute', width: 20,
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
   hiddenInput: { height: 1, opacity: 0, position: 'absolute', width: 1 },
 
   errorBox: {
-    alignItems: 'flex-start', backgroundColor: '#1C0000', borderColor: '#4C0519',
+    alignItems: 'flex-start', backgroundColor: '#1A0808', borderColor: '#3D1010',
     borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: Spacing.md,
   },
   errorDot: { color: Colors.danger, fontSize: 10, marginTop: 3 },
   errorMsg: { ...Typography.bodySm, color: Colors.danger, flex: 1 },
   messageBox: {
-    backgroundColor: Colors.accentDim, borderColor: '#1A4A40',
+    backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
     borderRadius: Radius.sm, borderWidth: 1, padding: Spacing.md,
   },
   messageMsg: { ...Typography.bodySm, color: Colors.accentLight, textAlign: 'center' },
@@ -219,12 +219,11 @@ const styles = StyleSheet.create({
   cta: {
     alignItems: 'center', backgroundColor: Colors.accent, borderRadius: Radius.md,
     elevation: 8, height: 54, justifyContent: 'center',
-    shadowColor: Colors.accent, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35, shadowRadius: 16,
+    shadowOpacity: 0,
   },
   ctaDisabled: { opacity: 0.45, shadowOpacity: 0 },
   ctaPressed: { opacity: 0.85, transform: [{ scale: 0.975 }] },
-  ctaText: { color: Colors.bg0, fontSize: 16, fontWeight: '800' },
+  ctaText: { color: Colors.bg1, fontSize: 15, fontWeight: '700' },
 
   resendRow: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
   resendLabel: { ...Typography.bodySm, color: Colors.text3 },

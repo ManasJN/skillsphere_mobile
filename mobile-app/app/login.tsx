@@ -1,47 +1,44 @@
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
-  Alert,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
+import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
+import { Button, ErrorBanner, Input } from '@/components/ui';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
 
   const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
     try {
       setLoading(true);
       setError('');
-
-      if (__DEV__) console.log('[Login] calling authAPI.login', { email: email.trim() });
-
       const response = await authAPI.login(email.trim(), password);
-
-      if (__DEV__) console.log('[Login] response', { status: response.status, data: response.data });
-
       const token = response.data?.token ?? response.data?.accessToken ?? response.data?.jwt;
       if (!token) throw new Error('Login succeeded but no token returned from server');
-
       await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
       router.replace('/(tabs)');
     } catch (err: any) {
-      if (__DEV__) console.log('[Login] error', err);
       const message = err?.response?.data?.message ?? err?.message ?? String(err);
       setError(message);
-      Alert.alert('LOGIN ERROR', message);
     } finally {
       setLoading(false);
     }
@@ -49,110 +46,106 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Login to continue using SkillSphere</Text>
+      style={S.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={S.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
 
-          {!!error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
+        {/* Brand mark */}
+        <View style={S.brand}>
+          <View style={S.brandMark}>
+            <Text style={S.brandLetter}>S</Text>
+          </View>
+          <Text style={S.brandName}>SkillSphere</Text>
+          <Text style={S.brandSub}>Student productivity platform</Text>
+        </View>
 
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor="#888"
+        {/* Form card */}
+        <View style={S.card}>
+          <Text style={S.cardTitle}>Welcome back</Text>
+          <Text style={S.cardSub}>Sign in to continue</Text>
+
+          {error ? <ErrorBanner message={error} /> : null}
+
+          <Input
+            label="Email"
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
+            placeholder="you@college.edu"
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor="#888"
+          <Input
+            label="Password"
             value={password}
             onChangeText={setPassword}
-            style={styles.input}
+            placeholder="Your password"
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
-          </TouchableOpacity>
+          <Button
+            label="Sign in"
+            onPress={handleLogin}
+            loading={loading}
+            full
+            style={{ marginTop: 4 }}
+          />
 
-          <TouchableOpacity onPress={() => router.push('/register')}>
-            <Text style={styles.linkText}>Don't have an account? Register</Text>
-          </TouchableOpacity>
+          <Pressable onPress={() => router.push('/register')} style={S.linkRow} hitSlop={8}>
+            <Text style={S.linkText}>
+              Don't have an account?{' '}
+              <Text style={S.linkAccent}>Register</Text>
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f172a',
-  },
-  scrollContainer: {
+const S = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: Colors.bg1 },
+  scroll:{
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xxxl,
+    gap: Spacing.xxl,
   },
-  card: {
-    backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#9ca3af',
-    marginBottom: 24,
-  },
-  input: {
-    backgroundColor: '#1f2937',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: '#fff',
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 16,
-    borderRadius: 12,
+
+  // Brand
+  brand:      { alignItems: 'center', gap: 10 },
+  brandMark: {
     alignItems: 'center',
-    marginTop: 8,
+    backgroundColor: Colors.accentDim,
+    borderColor: Colors.accentMid,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+  brandLetter: { ...Typography.h2, color: Colors.accent },
+  brandName:   { ...Typography.h2, color: Colors.text0 },
+  brandSub:    { ...Typography.bodySm, color: Colors.text3 },
+
+  // Card
+  card: {
+    backgroundColor: Colors.bg2,
+    borderColor: Colors.border1,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    gap: Spacing.md,
+    padding: Spacing.xl,
   },
-  linkText: {
-    color: '#60a5fa',
-    marginTop: 20,
-    textAlign: 'center',
-  },
-  errorBox: {
-    backgroundColor: '#7f1d1d',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#fecaca',
-    fontSize: 13,
-  },
+  cardTitle: { ...Typography.h2, color: Colors.text0, marginBottom: 2 },
+  cardSub:   { ...Typography.bodySm, color: Colors.text3, marginBottom: 4 },
+
+  // Link
+  linkRow:   { alignItems: 'center', paddingTop: 4 },
+  linkText:  { ...Typography.bodySm, color: Colors.text3, textAlign: 'center' },
+  linkAccent:{ color: Colors.accent },
 });

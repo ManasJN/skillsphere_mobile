@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -7,14 +8,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TOKEN_STORAGE_KEY, authAPI, skillsAPI, goalsAPI, projectsAPI } from '@/lib/api';
-import { Colors, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
+import { TOKEN_STORAGE_KEY, authAPI, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
 import { Avatar, Badge, Card, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
+import { AchievementsRow } from '@/components/AchievementsRow';
+import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
-type Goal    = { _id?: string; title?: string; priority?: string; progress?: number; status?: string; deadline?: string };
 type Project = { _id?: string; title?: string; status?: string; techStack?: string[]; description?: string };
+type Achievement = {
+  _id: string;
+  earnedAt: string;
+  achievement: {
+    title: string;
+    description: string;
+    icon: string;
+    category: string;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    xpReward: number;
+  } | null;
+};
 
 function fmtDate(d?: string) {
   if (!d) return '–';
@@ -30,28 +44,30 @@ function statusBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
 }
 
 export default function ProfileScreen() {
-  const [user,     setUser]     = useState<User | null>(null);
-  const [skills,   setSkills]   = useState<Skill[]>([]);
-  const [goals,    setGoals]    = useState<Goal[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error,    setError]    = useState('');
-  const [tab,      setTab]      = useState<'skills' | 'goals' | 'projects'>('skills');
+  const [user,         setUser]         = useState<User | null>(null);
+  const [skills,       setSkills]       = useState<Skill[]>([]);
+  const [projects,     setProjects]     = useState<Project[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [achLoading,   setAchLoading]   = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [error,        setError]        = useState('');
+  const [tab,          setTab]          = useState<'skills' | 'projects'>('skills');
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const [meRes, skillsRes, goalsRes, projRes] = await Promise.all([
+      const [meRes, skillsRes, projRes] = await Promise.all([
         authAPI.me(),
         skillsAPI.getMine(),
-        goalsAPI.getMine(),
         projectsAPI.getMine(),
       ]);
       setUser(meRes.data.user ?? meRes.data.data ?? meRes.data);
       setSkills(skillsRes.data.data ?? []);
-      setGoals(goalsRes.data.data ?? []);
       setProjects(projRes.data.data ?? []);
+      // Achievements loaded separately — non-blocking
+      setAchLoading(true);
+      achievementsAPI.getMine().then(r => setAchievements(r.data.data ?? [])).catch(() => {}).finally(() => setAchLoading(false));
     } catch { setError('Could not load profile.'); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
@@ -68,11 +84,12 @@ export default function ProfileScreen() {
   const xp       = user?.xpPoints ?? 0;
   const level    = levelFromXP(xp);
   const progress = xpProgress(xp);
+  const toNext   = xpToNextLevel(xp);
+  const sHealth  = streakHealth(user?.streakDays ?? 0, (user as any)?.lastActiveAt);
   const cs       = user?.codingStats ?? {};
 
   const TABS = [
     { key: 'skills'   as const, label: `Skills (${skills.length})` },
-    { key: 'goals'    as const, label: `Goals (${goals.length})` },
     { key: 'projects' as const, label: `Projects (${projects.length})` },
   ];
 
@@ -95,7 +112,6 @@ export default function ProfileScreen() {
           <>
             {/* ── Identity Hero Card ── */}
             <View style={S.heroCard}>
-              <View style={S.heroGlow} />
               <Row style={S.heroTop}>
                 <Avatar initials={getInitials(user?.name)} size={68} />
                 <View style={S.heroCopy}>
@@ -116,18 +132,23 @@ export default function ProfileScreen() {
                 </Row>
                 <ProgressBar pct={progress} color={Colors.accent} height={8} />
                 <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
-                  <Text style={S.xpSub}>{progress}% to Level {level + 1}</Text>
-                  <Text style={S.xpSub}>🔥 {user?.streakDays ?? 0} day streak</Text>
+                  <Text style={S.xpSub}>{toNext} XP to Level {level + 1}</Text>
+                  <Text style={[S.xpSub, sHealth === 'at_risk' && { color: Colors.warning }, sHealth === 'broken' && { color: Colors.danger }]}>{user?.streakDays ?? 0} day streak{sHealth === 'at_risk' ? ' — at risk' : ''}</Text>
                 </Row>
               </View>
             </View>
 
             {/* ── Quick Stats ── */}
             <Row style={S.statsRow}>
-              <StatChip label="CGPA" value={String(user?.cgpa ?? '–')} />
-              <StatChip label={`Sem ${user?.semester ?? '–'}`} value={user?.department?.slice(0, 6) ?? 'Dept'} />
-              <StatChip label="Streak" value={`${user?.streakDays ?? 0}d`} accent />
+              <StatChip label="CGPA"   value={String(user?.cgpa ?? '–')} />
+              <StatChip label="Skills" value={String(skills.length)} />
+              <StatChip label="Streak" value={`${user?.streakDays ?? 0}d`} accent={sHealth === 'safe' && (user?.streakDays ?? 0) > 1} />
             </Row>
+
+            {/* ── Achievements ── */}
+            {(achLoading || achievements.length > 0) && (
+              <AchievementsRow achievements={achievements} loading={achLoading} />
+            )}
 
             {/* ── Academic Info ── */}
             <Card style={S.section}>
@@ -164,10 +185,10 @@ export default function ProfileScreen() {
                     ['Easy',     cs.leetcodeEasy,       Colors.success],
                     ['Medium',   cs.leetcodeMedium,     Colors.warning],
                     ['Hard',     cs.leetcodeHard,       Colors.danger],
-                    ['CF Rating',cs.codeforcesRating,   Colors.xp],
+                    ['CF Rating',cs.codeforcesRating,   Colors.accent],
                     ['GitHub',   cs.githubContributions,Colors.info],
                     ['Repos',    cs.githubRepos,        Colors.text2],
-                    ['Contests', cs.contestsParticipated,Colors.xpLight],
+                    ['Contests', cs.contestsParticipated,Colors.accentLight],
                   ]
                     .filter(([, v]) => v !== undefined && v !== null)
                     .map(([lbl, val, clr]) => (
@@ -194,6 +215,15 @@ export default function ProfileScreen() {
               </Card>
             )}
 
+            {/* ── Goals nudge ── */}
+            <Pressable onPress={() => router.push('/(tabs)/goals' as any)} style={S.goalsNudge}>
+              <View>
+                <Text style={S.goalsNudgeTitle}>Goals</Text>
+                <Text style={S.goalsNudgeSub}>Track progress toward your targets</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={Colors.text3} />
+            </Pressable>
+
             {/* ── Tabbed Content ── */}
             <Card style={S.tabCard}>
               {/* Tab bar */}
@@ -208,7 +238,7 @@ export default function ProfileScreen() {
               {/* Skills */}
               {tab === 'skills' && (
                 skills.length === 0
-                  ? <EmptyState emoji="🎯" title="No skills tracked" body="Skills you add will show up here." />
+                  ? <EmptyState title="No skills tracked yet" body="Head to your profile to add the technologies and subjects you're learning." />
                   : <View style={S.skillsGrid}>
                       {skills.map((sk, i) => (
                         <View key={i} style={S.skillRow}>
@@ -225,33 +255,12 @@ export default function ProfileScreen() {
                     </View>
               )}
 
-              {/* Goals */}
-              {tab === 'goals' && (
-                goals.length === 0
-                  ? <EmptyState emoji="🏁" title="No goals yet" body="Set goals with deadlines and track your progress." />
-                  : <View style={{ gap: 10 }}>
-                      {goals.map((g, i) => (
-                        <View key={i} style={S.goalRow}>
-                          <Row style={S.goalTop}>
-                            <Text style={S.goalTitle} numberOfLines={1}>{g.title}</Text>
-                            <Badge label={g.status ?? 'active'} color={statusBadge(g.status)} />
-                          </Row>
-                          <ProgressBar pct={g.progress ?? 0} color={
-                            ({ high: Colors.danger, medium: Colors.warning, low: Colors.success } as const)[g.priority ?? ''] ?? Colors.accent
-                          } height={5} />
-                          <Row style={{ justifyContent: 'space-between' }}>
-                            <Text style={S.goalMeta}>{g.progress ?? 0}% done</Text>
-                            <Text style={S.goalMeta}>Due {fmtDate(g.deadline)}</Text>
-                          </Row>
-                        </View>
-                      ))}
-                    </View>
-              )}
+              {/* Goals — managed from the Goals tab */}
 
               {/* Projects */}
               {tab === 'projects' && (
                 projects.length === 0
-                  ? <EmptyState emoji="🚀" title="No projects yet" body="Add your projects to build your portfolio." />
+                  ? <EmptyState title="No projects yet" body="Add projects to showcase your work and earn XP." />
                   : <View style={{ gap: 10 }}>
                       {projects.map((p, i) => (
                         <View key={i} style={S.projRow}>
@@ -309,27 +318,28 @@ function ProfileSkeleton() {
 
 const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 14, paddingBottom: 48, paddingHorizontal: 18, paddingTop: 20 },
+  content: { gap: 14, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 20 },
   headerRow: { justifyContent: 'space-between', alignItems: 'center' },
-  screenTitle: { color: Colors.text0, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 },
+  screenTitle: { ...Typography.h2, color: Colors.text0 },
   signOutBtn: { paddingHorizontal: 2, paddingVertical: 4 },
   signOutTxt: { ...Typography.uiSm, color: Colors.text3 },
 
   // Hero card
   heroCard: {
-    backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.xxl,
-    borderWidth: 1, gap: 20, overflow: 'hidden', padding: 20, ...Shadow.md,
+    backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.lg,
+    borderLeftWidth: 3, borderLeftColor: Colors.accent,
+    borderWidth: 1, gap: 16, overflow: 'hidden', padding: 16,
   },
-  heroGlow: { backgroundColor: Colors.accent, borderRadius: 80, height: 120, opacity: 0.05, position: 'absolute', right: -40, top: -40, width: 120 },
+  heroGlow: {},
   heroTop: { gap: 16, alignItems: 'flex-start' },
   heroCopy: { flex: 1, gap: 4 },
-  heroName: { color: Colors.text0, fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  heroName: { ...Typography.h2, color: Colors.text0 },
   heroEmail: { ...Typography.bodySm, color: Colors.text3 },
 
   xpSection: { gap: 8 },
   xpMeta: { justifyContent: 'space-between' },
-  levelLbl: { ...Typography.label, color: Colors.xpLight, fontSize: 10 },
-  xpVal: { color: Colors.text0, fontSize: 16, fontWeight: '800' },
+  levelLbl: { ...Typography.label, color: Colors.accentLight, fontSize: 10 },
+  xpVal: { ...Typography.h4, color: Colors.text0 },
   xpSub: { ...Typography.bodySm, color: Colors.text3 },
 
   statsRow: { gap: 10 },
@@ -346,7 +356,7 @@ const S = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12, width: '23%',
   },
-  codingVal: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  codingVal: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
   codingLbl: { ...Typography.bodySm, color: Colors.text3, textAlign: 'center', fontSize: 10 },
 
   // Tabs
@@ -363,13 +373,6 @@ const S = StyleSheet.create({
   skillName: { ...Typography.uiSm, color: Colors.text1, flex: 1 },
   skillPct: { ...Typography.mono, fontWeight: '700' },
 
-  goalRow: {
-    backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md,
-    borderWidth: 1, gap: 8, padding: 14,
-  },
-  goalTop: { gap: 10, justifyContent: 'space-between' },
-  goalTitle: { ...Typography.h4, color: Colors.text0, flex: 1 },
-  goalMeta: { ...Typography.bodySm, color: Colors.text3 },
 
   projRow: {
     backgroundColor: Colors.bg3, borderColor: Colors.border0, borderRadius: Radius.md,
@@ -381,8 +384,21 @@ const S = StyleSheet.create({
   tag: { backgroundColor: Colors.bg4, borderColor: Colors.border1, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
   tagTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
 
+  goalsNudge: {
+    alignItems: 'center',
+    backgroundColor: Colors.bg2,
+    borderColor: Colors.border1,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 14,
+  },
+  goalsNudgeTitle: { ...Typography.h4, color: Colors.text0, marginBottom: 3 },
+  goalsNudgeSub:   { ...Typography.bodySm, color: Colors.text3 },
+
   logoutCard: {
-    alignItems: 'center', backgroundColor: '#0A0205', borderColor: '#3B0A14',
+    alignItems: 'center', backgroundColor: '#1A0808', borderColor: '#3D1010',
     borderRadius: Radius.md, borderWidth: 1, justifyContent: 'center', marginTop: 6, padding: 16,
   },
   logoutTxt: { ...Typography.ui, color: Colors.danger },
