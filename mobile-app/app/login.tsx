@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,15 @@ import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
 import { Button, ErrorBanner, Input } from '@/components/ui';
 
 export default function LoginScreen() {
+  // If a valid session exists, skip login and go straight to the app.
+  // The auth gate (app/index.tsx) handles this on cold open; this handles
+  // the case where the user navigates back to /login while authenticated.
+  useEffect(() => {
+    AsyncStorage.getItem(TOKEN_STORAGE_KEY).then(token => {
+      if (token) router.replace('/(tabs)');
+    });
+  }, []);
+
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);

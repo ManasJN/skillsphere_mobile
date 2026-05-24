@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authAPI, leaderboardAPI } from '@/lib/api';
-import { Colors, Radius, Shadow, Typography } from '@/lib/theme';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/theme';
 import { Card, EmptyState, ErrorBanner, Row, Skeleton } from '@/components/ui';
 
 type Leader = {
@@ -206,7 +206,7 @@ function LeaderboardSkeleton() {
 
 const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 16, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 20 },
+  content: { gap: 16, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 20 },
   header: { gap: 6 },
   eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
   title: { ...Typography.h2, color: Colors.text0 },

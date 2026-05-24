@@ -134,4 +134,4 @@ export const Shadow = {
 } as const;
 
 // ─── Nav heights ──────────────────────────────────────────────────────────────
-export const NAV_BOTTOM_OFFSET = 80; // px to add to scroll padding so content isn't buried under nav
+export const NAV_BOTTOM_OFFSET = 100; // px to add to scroll padding — covers tab bar on both platforms

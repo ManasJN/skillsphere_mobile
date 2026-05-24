@@ -45,7 +45,7 @@ api.interceptors.response.use(
     }
     if (error.response?.status === 401) {
       await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY]);
-      router.replace('/login');
+      router.replace('/'); // Route through auth gate for clean state reset
     }
     return Promise.reject(error);
   },

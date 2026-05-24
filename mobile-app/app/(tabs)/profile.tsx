@@ -100,7 +100,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try { await authAPI.logout(); } catch { /* ignore */ }
     await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-    router.replace('/login');
+    router.replace('/'); // Auth gate will redirect to /login
   };
 
   const xp       = user?.xpPoints ?? 0;
