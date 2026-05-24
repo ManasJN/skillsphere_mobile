@@ -124,10 +124,16 @@ export const opportunitiesAPI = {
 };
 
 export const usersAPI = {
-  getById:    (id: string) => api.get(`/users/${id}`),
-  update:     (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
+  getById:           (id: string) => api.get(`/users/${id}`),
+  update:            (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
   updateCodingStats: (id: string, data: Record<string, unknown>) => api.put(`/users/${id}/coding-stats`, data),
-  addCert:    (id: string, formData: FormData) =>
+  /** Auto-fetches LeetCode stats by username via server-side GraphQL scrape */
+  importLeetCode:    (id: string, username: string) =>
+    api.put(`/users/${id}/import/leetcode`, { username }),
+  /** Auto-fetches GitHub repos + profile by username via GitHub REST API */
+  importGitHub:      (id: string, username: string) =>
+    api.put(`/users/${id}/import/github`, { username }),
+  addCert:           (id: string, formData: FormData) =>
     api.post(`/users/${id}/certifications`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 

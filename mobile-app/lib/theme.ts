@@ -32,7 +32,7 @@ export const Colors = {
   success: '#52B788',
   warning: '#E9B558',
   danger:  '#D16666',
-  info:    '#5DADE2',
+  info:    '#5DADE2',  // same as accent — info uses the sky-blue
 
   // Text — natural hierarchy, not harsh white-on-black
   text0: '#F2F4F7',   // headings / primary

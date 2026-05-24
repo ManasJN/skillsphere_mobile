@@ -118,7 +118,7 @@ function Pillar({ leader, rank, hero, isMe }: { leader: Leader; rank: number; he
 const pS = StyleSheet.create({
   pillar: {
     alignItems: 'center', backgroundColor: Colors.bg2, borderColor: Colors.border1,
-    borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 6,
+    borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 6, minWidth: 88,
     paddingHorizontal: 8, paddingVertical: 18,
   },
   pillarHero: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, marginHorizontal: -4, paddingVertical: 24, zIndex: 1 },

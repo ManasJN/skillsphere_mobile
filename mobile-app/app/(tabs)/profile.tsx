@@ -13,7 +13,8 @@ import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/the
 import { Avatar, Badge, Card, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
-import { SkillSheet }      from '@/components/SkillSheet';
+import { SkillSheet }           from '@/components/SkillSheet';
+import { CodingProfileSheet } from '@/components/CodingProfileSheet';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
@@ -44,7 +45,8 @@ export default function ProfileScreen() {
   const [achLoading,   setAchLoading]   = useState(false);
   const [skillSheet,   setSkillSheet]   = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
-  const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
+  const [deletingSkillId,  setDeletingSkillId]  = useState<string | null>(null);
+  const [codingSheet,      setCodingSheet]      = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -196,23 +198,31 @@ export default function ProfileScreen() {
               )}
             </Card>
 
-            {/* ── Coding Stats ── */}
-            {Object.keys(cs).length > 0 && (
-              <Card style={S.section}>
+            {/* ── Coding Profile — always visible, prompts connection if empty ── */}
+            <Card style={S.section}>
+              <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={S.sectionTitle}>Coding Profile</Text>
-                <Divider style={{ marginVertical: 8 }} />
+                <Pressable
+                  onPress={() => setCodingSheet(true)}
+                  style={S.syncBtn}>
+                  <Ionicons name="sync-outline" size={14} color={Colors.accent} />
+                  <Text style={S.syncBtnTxt}>
+                    {Object.keys(cs).some(k => (cs as any)[k] > 0) ? 'Sync' : 'Connect'}
+                  </Text>
+                </Pressable>
+              </Row>
+              {Object.keys(cs).some(k => (cs as any)[k] > 0) ? (
                 <View style={S.codingGrid}>
                   {[
-                    ['Solved',   cs.leetcodeSolved,     Colors.accentLight],
-                    ['Easy',     cs.leetcodeEasy,       Colors.success],
-                    ['Medium',   cs.leetcodeMedium,     Colors.warning],
-                    ['Hard',     cs.leetcodeHard,       Colors.danger],
-                    ['CF Rating',cs.codeforcesRating,   Colors.accent],
-                    ['GitHub',   cs.githubContributions,Colors.info],
-                    ['Repos',    cs.githubRepos,        Colors.text2],
+                    ['Solved',   cs.leetcodeSolved,      Colors.accentLight],
+                    ['Easy',     cs.leetcodeEasy,        Colors.success],
+                    ['Medium',   cs.leetcodeMedium,      Colors.warning],
+                    ['Hard',     cs.leetcodeHard,        Colors.danger],
+                    ['CF Rating',cs.codeforcesRating,    Colors.accent],
+                    ['Repos',    cs.githubRepos,         Colors.text2],
                     ['Contests', cs.contestsParticipated,Colors.accentLight],
                   ]
-                    .filter(([, v]) => v !== undefined && v !== null)
+                    .filter(([, v]) => v !== undefined && v !== null && Number(v) > 0)
                     .map(([lbl, val, clr]) => (
                       <View key={String(lbl)} style={S.codingCell}>
                         <Text style={[S.codingVal, { color: String(clr) }]}>{String(val)}</Text>
@@ -220,8 +230,18 @@ export default function ProfileScreen() {
                       </View>
                     ))}
                 </View>
-              </Card>
-            )}
+              ) : (
+                <View style={S.codingEmpty}>
+                  <Text style={S.codingEmptyTitle}>Connect your coding accounts</Text>
+                  <Text style={S.codingEmptyBody}>
+                    Sync LeetCode and GitHub to auto-import your stats. Add Codeforces rating manually.
+                  </Text>
+                  <Pressable onPress={() => setCodingSheet(true)} style={S.codingConnectBtn}>
+                    <Text style={S.codingConnectTxt}>Connect platforms</Text>
+                  </Pressable>
+                </View>
+              )}
+            </Card>
 
             {/* ── Social Links ── */}
             {user?.socialLinks && Object.values(user.socialLinks).some(Boolean) && (
@@ -327,6 +347,18 @@ export default function ProfileScreen() {
           </>
         )}
       </ScrollView>
+      <CodingProfileSheet
+        visible={codingSheet}
+        onClose={() => setCodingSheet(false)}
+        userId={user?._id ?? ''}
+        initialStats={user?.codingStats as any}
+        initialProfiles={user?.platformProfiles as any}
+        onSaved={(updated) => {
+          if (updated) {
+            setUser(prev => prev ? { ...prev, ...updated } : updated);
+          }
+        }}
+      />
       <SkillSheet
         visible={skillSheet}
         onClose={() => setSkillSheet(false)}
@@ -395,7 +427,8 @@ const S = StyleSheet.create({
   infoVal: { ...Typography.bodySm, color: Colors.text1, fontWeight: '600' as const, maxWidth: '55%', textAlign: 'right' as const },
   linkVal: { ...Typography.bodySm, color: Colors.accentLight, maxWidth: '55%', textAlign: 'right' },
 
-  codingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  codingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },  // 2-col responsive
+  // Coding cell: 2-per-row minimum width
   codingCell: {
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12, width: '23%',
@@ -440,6 +473,22 @@ const S = StyleSheet.create({
   },
   goalsNudgeTitle: { ...Typography.h4, color: Colors.text0, marginBottom: 3 },
   goalsNudgeSub:   { ...Typography.bodySm, color: Colors.text3 },
+
+  syncBtn: {
+    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
+    borderRadius: Radius.xs, borderWidth: 1, flexDirection: 'row', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6,
+  },
+  syncBtnTxt: { ...Typography.bodyXs, color: Colors.accent, fontWeight: '600' as const },
+
+  codingEmpty: { alignItems: 'center', gap: 8, paddingVertical: 12 },
+  codingEmptyTitle: { ...Typography.h4, color: Colors.text1 },
+  codingEmptyBody:  { ...Typography.bodySm, color: Colors.text3, textAlign: 'center' as const, lineHeight: 19 },
+  codingConnectBtn: {
+    backgroundColor: Colors.accent, borderRadius: Radius.sm,
+    marginTop: 4, paddingHorizontal: 20, paddingVertical: 10,
+  },
+  codingConnectTxt: { ...Typography.uiSm, color: Colors.bg1, fontWeight: '700' as const },
 
   addSkillBtn: {
     alignItems: 'center',
