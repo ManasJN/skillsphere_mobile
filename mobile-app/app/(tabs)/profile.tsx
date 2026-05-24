@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TOKEN_STORAGE_KEY, authAPI, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
-import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/theme';
 import { Avatar, Badge, Card, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
@@ -17,18 +17,6 @@ import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
 type Project = { _id?: string; title?: string; status?: string; techStack?: string[]; description?: string };
-type Achievement = {
-  _id: string;
-  earnedAt: string;
-  achievement: {
-    title: string;
-    description: string;
-    icon: string;
-    category: string;
-    rarity: 'common' | 'rare' | 'epic' | 'legendary';
-    xpReward: number;
-  } | null;
-};
 
 function fmtDate(d?: string) {
   if (!d) return '–';
@@ -44,15 +32,15 @@ function statusBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
 }
 
 export default function ProfileScreen() {
-  const [user,         setUser]         = useState<User | null>(null);
-  const [skills,       setSkills]       = useState<Skill[]>([]);
-  const [projects,     setProjects]     = useState<Project[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [achLoading,   setAchLoading]   = useState(true);
-  const [refreshing,   setRefreshing]   = useState(false);
-  const [error,        setError]        = useState('');
-  const [tab,          setTab]          = useState<'skills' | 'projects'>('skills');
+  const [user,     setUser]     = useState<User | null>(null);
+  const [skills,   setSkills]   = useState<Skill[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error,    setError]    = useState('');
+  const [tab,          setTab]         = useState<'skills' | 'projects'>('skills');
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [achLoading,   setAchLoading]   = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -347,8 +335,8 @@ const S = StyleSheet.create({
   section: { gap: 12 },
   sectionTitle: { ...Typography.h3, color: Colors.text0 },
   infoRow: { justifyContent: 'space-between', paddingVertical: 5 },
-  infoLbl: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
-  infoVal: { ...Typography.bodySm, color: Colors.text1, fontWeight: '600', maxWidth: '55%', textAlign: 'right' },
+  infoLbl: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
+  infoVal: { ...Typography.bodySm, color: Colors.text1, fontWeight: '600' as const, maxWidth: '55%', textAlign: 'right' as const },
   linkVal: { ...Typography.bodySm, color: Colors.accentLight, maxWidth: '55%', textAlign: 'right' },
 
   codingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -356,7 +344,7 @@ const S = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12, width: '23%',
   },
-  codingVal: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  codingVal: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
   codingLbl: { ...Typography.bodySm, color: Colors.text3, textAlign: 'center', fontSize: 10 },
 
   // Tabs
@@ -364,14 +352,14 @@ const S = StyleSheet.create({
   tabBar: { backgroundColor: Colors.bg3, borderRadius: Radius.sm, flexDirection: 'row', padding: 4 },
   tabBtn: { alignItems: 'center', borderRadius: Radius.xs, flex: 1, paddingVertical: 8 },
   tabBtnActive: { backgroundColor: Colors.bg2, ...Shadow.sm },
-  tabTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
-  tabTxtActive: { color: Colors.text0, fontWeight: '700' },
+  tabTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
+  tabTxtActive: { color: Colors.text0, fontWeight: '700' as const },
 
   skillsGrid: { gap: 12 },
   skillRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   skillDot: { borderRadius: 5, height: 8, width: 8 },
   skillName: { ...Typography.uiSm, color: Colors.text1, flex: 1 },
-  skillPct: { ...Typography.mono, fontWeight: '700' },
+  skillPct: { ...Typography.mono, fontWeight: '700' as const },
 
 
   projRow: {
@@ -382,7 +370,7 @@ const S = StyleSheet.create({
   projTitle: { ...Typography.h4, color: Colors.text0, flex: 1 },
   projDesc: { ...Typography.bodySm, color: Colors.text2, lineHeight: 20 },
   tag: { backgroundColor: Colors.bg4, borderColor: Colors.border1, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 3 },
-  tagTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
+  tagTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
 
   goalsNudge: {
     alignItems: 'center',
