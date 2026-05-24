@@ -196,8 +196,14 @@ export default function ExploreScreen() {
     try {
       await opportunitiesAPI.apply(id);
       setApplied(prev => new Set([...prev, id]));
-    } catch { /* silent — might already be applied */ }
-    finally { setApplying(null); }
+    } catch (err: any) {
+      const status = err?.response?.status;
+      // 409 = already applied — treat as success so button shows "Applied"
+      if (status === 409 || status === 400) {
+        setApplied(prev => new Set([...prev, id]));
+      }
+      // Any other error — leave button interactive so user can retry
+    } finally { setApplying(null); }
   };
 
   const dismiss = (id: string) =>

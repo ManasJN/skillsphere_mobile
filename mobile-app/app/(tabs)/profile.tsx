@@ -13,6 +13,7 @@ import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/the
 import { Avatar, Badge, Card, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
+import { SkillSheet }      from '@/components/SkillSheet';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
@@ -41,6 +42,9 @@ export default function ProfileScreen() {
   const [tab,          setTab]         = useState<'skills' | 'projects'>('skills');
   const [achievements, setAchievements] = useState<any[]>([]);
   const [achLoading,   setAchLoading]   = useState(false);
+  const [skillSheet,   setSkillSheet]   = useState(false);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [deletingSkillId, setDeletingSkillId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -62,6 +66,36 @@ export default function ProfileScreen() {
 
   useEffect(() => { load(); }, [load]);
   const onRefresh = () => { setRefreshing(true); load(); };
+
+  const openAddSkill = () => { setEditingSkill(null); setSkillSheet(true); };
+  const openEditSkill = (sk: Skill) => { setEditingSkill(sk); setSkillSheet(true); };
+
+  const handleSaveSkill = async (draft: { name: string; category: string; level: number; description?: string }) => {
+    if (editingSkill?._id) {
+      await skillsAPI.update(editingSkill._id, draft as Record<string, unknown>);
+    } else {
+      await skillsAPI.create(draft as Record<string, unknown>);
+    }
+    load(); // reload to get server-assigned _id on new skills
+  };
+
+  const handleDeleteSkill = (sk: Skill) => {
+    if (!sk._id) return;
+    const { Alert } = require('react-native');
+    Alert.alert(
+      'Remove skill',
+      `Remove "${sk.name}" from your profile?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: async () => {
+          setDeletingSkillId(sk._id!);
+          try { await skillsAPI.delete(sk._id!); setSkills(prev => prev.filter(s => s._id !== sk._id)); }
+          catch { /* silent */ }
+          finally { setDeletingSkillId(null); }
+        }},
+      ]
+    );
+  };
 
   const handleLogout = async () => {
     try { await authAPI.logout(); } catch { /* ignore */ }
@@ -204,7 +238,7 @@ export default function ProfileScreen() {
             )}
 
             {/* ── Goals nudge ── */}
-            <Pressable onPress={() => router.push('/(tabs)/goals' as any)} style={S.goalsNudge}>
+            <Pressable onPress={() => router.push('/(tabs)/goals')} style={S.goalsNudge}>
               <View>
                 <Text style={S.goalsNudgeTitle}>Goals</Text>
                 <Text style={S.goalsNudgeSub}>Track progress toward your targets</Text>
@@ -225,22 +259,38 @@ export default function ProfileScreen() {
 
               {/* Skills */}
               {tab === 'skills' && (
-                skills.length === 0
-                  ? <EmptyState title="No skills tracked yet" body="Head to your profile to add the technologies and subjects you're learning." />
-                  : <View style={S.skillsGrid}>
-                      {skills.map((sk, i) => (
-                        <View key={i} style={S.skillRow}>
+                <View style={{ gap: 10 }}>
+                  {skills.length === 0
+                    ? <EmptyState title="No skills yet" body="Track what you know and what you're learning." />
+                    : skills.map((sk, i) => (
+                        <View key={sk._id ?? i} style={S.skillRow}>
                           <View style={[S.skillDot, { backgroundColor: skillColor(sk.category) }]} />
                           <View style={{ flex: 1, gap: 5 }}>
-                            <Row style={{ justifyContent: 'space-between' }}>
-                              <Text style={S.skillName}>{sk.name}</Text>
-                              <Text style={[S.skillPct, { color: skillColor(sk.category) }]}>{sk.level ?? 0}%</Text>
+                            <Row style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={S.skillName} numberOfLines={1}>{sk.name}</Text>
+                              <Row style={{ gap: 8, alignItems: 'center' }}>
+                                <Text style={[S.skillPct, { color: skillColor(sk.category) }]}>{sk.level ?? 0}%</Text>
+                                <Pressable onPress={() => openEditSkill(sk)} hitSlop={8}>
+                                  <Ionicons name="create-outline" size={15} color={Colors.text3} />
+                                </Pressable>
+                                <Pressable onPress={() => handleDeleteSkill(sk)} hitSlop={8}
+                                  disabled={deletingSkillId === sk._id}>
+                                  <Ionicons name="trash-outline" size={15}
+                                    color={deletingSkillId === sk._id ? Colors.text4 : Colors.text3} />
+                                </Pressable>
+                              </Row>
                             </Row>
                             <ProgressBar pct={sk.level ?? 0} color={skillColor(sk.category)} height={5} />
                           </View>
                         </View>
-                      ))}
-                    </View>
+                      ))
+                  }
+                  {/* Add skill button — always visible at bottom of list */}
+                  <Pressable onPress={openAddSkill} style={S.addSkillBtn}>
+                    <Ionicons name="add" size={16} color={Colors.accent} />
+                    <Text style={S.addSkillTxt}>Add skill</Text>
+                  </Pressable>
+                </View>
               )}
 
               {/* Goals — managed from the Goals tab */}
@@ -277,6 +327,12 @@ export default function ProfileScreen() {
           </>
         )}
       </ScrollView>
+      <SkillSheet
+        visible={skillSheet}
+        onClose={() => setSkillSheet(false)}
+        onSave={handleSaveSkill}
+        skill={editingSkill}
+      />
     </SafeAreaView>
   );
 }
@@ -384,6 +440,19 @@ const S = StyleSheet.create({
   },
   goalsNudgeTitle: { ...Typography.h4, color: Colors.text0, marginBottom: 3 },
   goalsNudgeSub:   { ...Typography.bodySm, color: Colors.text3 },
+
+  addSkillBtn: {
+    alignItems: 'center',
+    borderColor: Colors.border1,
+    borderRadius: Radius.sm,
+    borderStyle: 'dashed' as const,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  addSkillTxt: { ...Typography.uiSm, color: Colors.accent },
 
   logoutCard: {
     alignItems: 'center', backgroundColor: '#1A0808', borderColor: '#3D1010',

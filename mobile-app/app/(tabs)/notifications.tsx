@@ -1,3 +1,5 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Pressable, RefreshControl, ScrollView,
@@ -82,6 +84,9 @@ export default function NotificationsScreen() {
 
         {/* ── Header ── */}
         <Row style={S.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12} style={S.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={Colors.text1} />
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={S.eyebrow}>Activity</Text>
             <Text style={S.title}>Notifications</Text>

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -13,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { authAPI } from '@/lib/api';
+import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
 import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
 
 const OTP_LENGTH = 6;
@@ -40,8 +41,16 @@ export default function OtpVerificationScreen() {
     if (otp.length !== OTP_LENGTH) { setError('Enter the full 6-digit code.'); return; }
     setError(''); setMessage(''); setIsVerifying(true);
     try {
-      await authAPI.verifyOtp(email, otp);
-      router.replace('/login');
+      const res = await authAPI.verifyOtp(email, otp);
+      // Server returns a token automatically after verification (sendTokenResponse).
+      // Store it so the user is logged in immediately — no need to re-enter credentials.
+      const token = res.data?.token ?? res.data?.accessToken ?? res.data?.jwt;
+      if (token) {
+        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+      // Route to main app. If no token was returned (shouldn't happen), the auth
+      // gate on next open will redirect to login.
+      router.replace('/(tabs)');
     } catch (err) {
       if (isAxiosError(err)) {
         if (err.response?.data?.message) setError(err.response.data.message);
