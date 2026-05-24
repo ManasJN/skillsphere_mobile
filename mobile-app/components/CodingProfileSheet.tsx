@@ -170,10 +170,11 @@ export function CodingProfileSheet({
       animationType="slide"
       onRequestClose={onClose}
       presentationStyle="pageSheet"
+      statusBarTranslucent={true}
       transparent={false}
       visible={visible}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={S.root}>
 
         {/* Header */}

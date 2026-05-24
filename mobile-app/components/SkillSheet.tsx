@@ -88,10 +88,11 @@ export function SkillSheet({ visible, onClose, onSave, skill }: Props) {
       animationType="slide"
       onRequestClose={onClose}
       presentationStyle="pageSheet"
+      statusBarTranslucent={true}
       transparent={false}
       visible={visible}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={S.root}>
 
         <View style={S.header}>

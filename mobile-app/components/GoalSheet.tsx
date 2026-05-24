@@ -180,10 +180,11 @@ export function GoalSheet({ visible, onClose, onSave, goal }: GoalSheetProps) {
       animationType="slide"
       onRequestClose={onClose}
       presentationStyle="pageSheet"
+      statusBarTranslucent={true}
       transparent={false}
       visible={visible}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={S.root}>
 
         {/* ── Sheet header ── */}
