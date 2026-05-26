@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, RefreshControl, ScrollView,
+  RefreshControl, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -70,10 +70,13 @@ export default function LeaderboardScreen() {
           <>
             {/* ── Podium ── */}
             {top3.length >= 3 && (
-              <View style={S.podiumWrap}>
-                <Pillar leader={top3[1]} rank={2} isMe={top3[1]._id === currentId} />
-                <Pillar leader={top3[0]} rank={1} isMe={top3[0]._id === currentId} hero />
-                <Pillar leader={top3[2]} rank={3} isMe={top3[2]._id === currentId} />
+              <View style={S.topBlock}>
+                <TopLeader leader={top3[0]} isMe={top3[0]._id === currentId} />
+                <View style={S.runnerRows}>
+                  <Runner leader={top3[1]} rank={2} isMe={top3[1]._id === currentId} />
+                  <View style={S.divider} />
+                  <Runner leader={top3[2]} rank={3} isMe={top3[2]._id === currentId} />
+                </View>
               </View>
             )}
 
@@ -95,6 +98,39 @@ export default function LeaderboardScreen() {
   );
 }
 
+function TopLeader({ leader, isMe }: { leader: Leader; isMe?: boolean }) {
+  return (
+    <View style={[pS.topLeader, isMe && pS.pillarMe]}>
+      <View style={pS.rankBadge}><Text style={pS.rankBadgeTxt}>1</Text></View>
+      <View style={pS.avatarHero}>
+        <Text style={pS.avatarTxtHero}>{initials(leader.name)}</Text>
+      </View>
+      <View style={pS.topCopy}>
+        <Text style={pS.topName} numberOfLines={1}>{leader.name ?? '-'}</Text>
+        <Text style={pS.topDept} numberOfLines={1}>{leader.department ?? 'Student'}</Text>
+      </View>
+      <View style={pS.topScore}>
+        <Text style={pS.topXp}>{(leader.xpPoints ?? 0).toLocaleString()}</Text>
+        <Text style={pS.xpLbl}>XP</Text>
+      </View>
+    </View>
+  );
+}
+
+function Runner({ leader, rank, isMe }: { leader: Leader; rank: number; isMe?: boolean }) {
+  return (
+    <View style={[pS.runner, isMe && pS.runnerMe]}>
+      <Text style={pS.medal}>{MEDAL[rank - 1]}</Text>
+      <View style={[pS.avatar, isMe && pS.avatarMe]}>
+        <Text style={pS.avatarTxt}>{initials(leader.name)}</Text>
+      </View>
+      <Text style={pS.name} numberOfLines={1}>{leader.name ?? '-'}</Text>
+      <Text style={pS.xp}>{(leader.xpPoints ?? 0).toLocaleString()} XP</Text>
+    </View>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Pillar({ leader, rank, hero, isMe }: { leader: Leader; rank: number; hero?: boolean; isMe?: boolean }) {
   return (
     <View style={[pS.pillar, hero && pS.pillarHero, isMe && pS.pillarMe]}>
@@ -116,6 +152,37 @@ function Pillar({ leader, rank, hero, isMe }: { leader: Leader; rank: number; he
   );
 }
 const pS = StyleSheet.create({
+  topLeader: {
+    alignItems: 'center',
+    backgroundColor: Colors.accentDim,
+    borderColor: Colors.accentMid,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+  },
+  rankBadge: {
+    alignItems: 'center',
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.sm,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  rankBadgeTxt: { ...Typography.h4, color: Colors.bg1 },
+  topCopy: { flex: 1, gap: 2 },
+  topName: { ...Typography.h3, color: Colors.text0 },
+  topDept: { ...Typography.bodySm, color: Colors.text3 },
+  topScore: { alignItems: 'flex-end' },
+  topXp: { ...Typography.statSm, color: Colors.accentLight },
+  runner: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  runnerMe: { backgroundColor: Colors.accentDim },
   pillar: {
     alignItems: 'center', backgroundColor: Colors.bg2, borderColor: Colors.border1,
     borderRadius: Radius.lg, borderWidth: 1, flex: 1, gap: 6, minWidth: 88,
@@ -131,7 +198,7 @@ const pS = StyleSheet.create({
   avatarTxtHero: { color: Colors.accentLight, fontSize: 18 },
   name: { ...Typography.uiSm, color: Colors.text1, textAlign: 'center' },
   nameHero: { color: Colors.text0, fontWeight: '700' },
-  xp: { color: Colors.text0, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+  xp: { ...Typography.h4, color: Colors.text0 },
   xpLbl: { ...Typography.label, color: Colors.text3, fontSize: 9, marginTop: -2 },
   streakPill: { backgroundColor: Colors.bg4, borderRadius: Radius.full, paddingHorizontal: 8, paddingVertical: 3 },
   streakTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' },
@@ -212,6 +279,14 @@ const S = StyleSheet.create({
   title: { ...Typography.h2, color: Colors.text0 },
   sub: { ...Typography.bodySm, color: Colors.text3, lineHeight: 20 },
   podiumWrap: { alignItems: 'flex-end', flexDirection: 'row', gap: 8 },
-  listCard: { backgroundColor: Colors.bg2, borderColor: Colors.border1, borderRadius: Radius.lg, borderWidth: 1, overflow: 'hidden', ...Shadow.sm },
+  topBlock: { gap: 10 },
+  runnerRows: {
+    borderBottomColor: Colors.border0,
+    borderBottomWidth: 1,
+    borderTopColor: Colors.border0,
+    borderTopWidth: 1,
+    paddingHorizontal: 2,
+  },
+  listCard: { borderTopColor: Colors.border0, borderTopWidth: 1, overflow: 'hidden', ...Shadow.none },
   divider: { backgroundColor: Colors.border0, height: 1 },
 });

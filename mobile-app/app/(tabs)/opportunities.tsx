@@ -32,7 +32,7 @@ import { collegesAPI, opportunitiesAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Spacing, Typography } from '@/lib/theme';
 import {
   Badge, BadgeColor, Card, Divider, EmptyState,
-  ErrorBanner, Row, Skeleton, SkeletonCard,
+  ErrorBanner, Row, Skeleton,
 } from '@/components/ui';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

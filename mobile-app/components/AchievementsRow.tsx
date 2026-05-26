@@ -10,8 +10,8 @@
  */
 
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Colors, Radius, Typography } from '@/lib/theme';
-import { SectionHeader, Skeleton, Row } from '@/components/ui';
+import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
+import { Skeleton } from '@/components/ui';
 
 type Achievement = {
   _id: string;
@@ -42,7 +42,7 @@ export function AchievementsRow({ achievements, loading }: Props) {
   if (loading) {
     return (
       <View style={S.wrap}>
-        <SectionHeader title="Achievements" />
+        <Text style={S.title}>Achievements</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.row}>
           {[0, 1, 2].map(i => (
             <Skeleton key={i} width={110} height={56} radius={Radius.md} />
@@ -56,10 +56,10 @@ export function AchievementsRow({ achievements, loading }: Props) {
 
   return (
     <View style={S.wrap}>
-      <SectionHeader
-        title="Achievements"
-        style={{ paddingHorizontal: 0 }}
-      />
+      <View style={S.head}>
+        <Text style={S.title}>Achievements</Text>
+        <Text style={S.count}>{achievements.length} earned</Text>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -71,7 +71,7 @@ export function AchievementsRow({ achievements, loading }: Props) {
           return (
             <View
               key={ea._id}
-              style={[S.chip, { backgroundColor: rar.bg, borderColor: rar.border }]}>
+              style={[S.chip, { borderColor: rar.border }]}>
               {/* Icon as text — server stores emoji strings. Kept small. */}
               <Text style={S.chipIcon}>{a.icon}</Text>
               <View style={S.chipText}>
@@ -89,19 +89,28 @@ export function AchievementsRow({ achievements, loading }: Props) {
 }
 
 const S = StyleSheet.create({
-  wrap: { gap: 10 },
-  row:  { gap: 8, paddingBottom: 2 },
+  wrap: {
+    borderTopColor: Colors.border0,
+    borderTopWidth: 1,
+    gap: 10,
+    paddingTop: 16,
+  },
+  head: { alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between' },
+  title: { ...Typography.h3, color: Colors.text0 },
+  count: { ...Typography.bodyXs, color: Colors.text3 },
+  row:  { gap: 8, paddingBottom: 2, paddingRight: Spacing.lg },
   chip: {
     alignItems: 'center',
-    borderRadius: Radius.md,
+    backgroundColor: 'transparent',
+    borderRadius: Radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    width: 148,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    width: 142,
   },
-  chipIcon:  { fontSize: 18 },
+  chipIcon:  { fontSize: 16 },
   chipText:  { flex: 1, gap: 2 },
   chipTitle: { ...Typography.bodyXs, fontWeight: '600' as const },
   chipXP:    { ...Typography.bodyXs, color: Colors.text3 },

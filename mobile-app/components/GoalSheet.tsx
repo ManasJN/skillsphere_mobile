@@ -386,9 +386,9 @@ export function GoalSheet({ visible, onClose, onSave, goal }: GoalSheetProps) {
 // ─── Priority color overrides for selected segments ──────────────────────────
 
 const priorityActiveBg: Record<Goal['priority'], object> = {
-  high:   { backgroundColor: '#1E0808', borderColor: '#3D1010' },
-  medium: { backgroundColor: '#1E1600', borderColor: '#3D2E00' },
-  low:    { backgroundColor: '#0A1A12', borderColor: '#163324' },
+  high:   { backgroundColor: Colors.status.dangerBg, borderColor: Colors.status.dangerBorder },
+  medium: { backgroundColor: Colors.status.warningBg, borderColor: Colors.status.warningBorder },
+  low:    { backgroundColor: Colors.status.successBg, borderColor: Colors.status.successBorder },
 };
 const priorityActiveFg: Record<Goal['priority'], object> = {
   high:   { color: Colors.danger },

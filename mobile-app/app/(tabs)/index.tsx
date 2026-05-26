@@ -15,10 +15,13 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -224,7 +227,7 @@ export default function HomeScreen() {
             )}
 
             {/* ── Active goals — FIRST meaningful work section ── */}
-            <Card>
+            <SectionBlock>
               <SectionHeader
                 title="Active Goals"
                 actionLabel="All goals"
@@ -261,10 +264,10 @@ export default function HomeScreen() {
                   )}
                 </View>
               )}
-            </Card>
+            </SectionBlock>
 
             {/* ── Skills ── */}
-            <Card>
+            <SectionBlock style={S.openSection}>
               <SectionHeader
                 title="Top Skills"
                 actionLabel="Profile"
@@ -280,11 +283,11 @@ export default function HomeScreen() {
                   {skills.slice(0, 6).map((sk, i) => <SkillChip key={i} skill={sk} />)}
                 </View>
               )}
-            </Card>
+            </SectionBlock>
 
             {/* ── Coding snapshot ── */}
             {Object.keys(cs).length > 0 && (
-              <Card>
+              <SectionBlock style={S.openSection}>
                 <SectionHeader
                   title="Coding Stats"
                   actionLabel="Update"
@@ -303,12 +306,12 @@ export default function HomeScreen() {
                     </View>
                   ))}
                 </View>
-              </Card>
+              </SectionBlock>
             )}
 
             {/* ── Opportunities ── */}
             {opps.length > 0 && (
-              <Card>
+              <SectionBlock style={S.openSection}>
                 <SectionHeader
                   title="For You"
                   actionLabel="See all"
@@ -317,7 +320,7 @@ export default function HomeScreen() {
                 <View style={S.listGap}>
                   {opps.map((o) => <OppRow key={o._id} opp={o} />)}
                 </View>
-              </Card>
+              </SectionBlock>
             )}
 
             {/* ── AI Guidance ── */}
@@ -325,7 +328,7 @@ export default function HomeScreen() {
 
             {/* ── College updates ── */}
             {updates.length > 0 && (
-              <Card>
+              <SectionBlock style={S.openSection}>
                 <SectionHeader title="College Updates" />
                 <View style={S.listGap}>
                   {updates.map((u, i) => (
@@ -338,12 +341,12 @@ export default function HomeScreen() {
                     </View>
                   ))}
                 </View>
-              </Card>
+              </SectionBlock>
             )}
 
             {/* ── Projects ── */}
             {projects.length > 0 && (
-              <Card>
+              <SectionBlock style={S.openSection}>
                 <SectionHeader
                   title="Projects"
                   actionLabel="View all"
@@ -352,7 +355,7 @@ export default function HomeScreen() {
                 <View style={S.listGap}>
                   {projects.slice(0, 3).map((p, i) => <ProjectRow key={i} project={p} />)}
                 </View>
-              </Card>
+              </SectionBlock>
             )}
           </>
         )}
@@ -362,6 +365,16 @@ export default function HomeScreen() {
 }
 
 // ─── XPCard — rewritten with streak health + XP-to-next-level ───────────────
+
+function SectionBlock({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return <View style={[S.sectionBlock, style]}>{children}</View>;
+}
 
 function XPCard({ xp, level, progress, streak, lastActiveAt }: {
   xp: number; level: number; progress: number; streak: number; lastActiveAt?: string;
@@ -408,21 +421,19 @@ function XPCard({ xp, level, progress, streak, lastActiveAt }: {
 
 const xpS = StyleSheet.create({
   card: {
-    backgroundColor: Colors.accentDim,
-    borderColor: Colors.accentMid,
-    borderRadius: Radius.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
-    borderWidth: 1,
-    gap: 16,
-    padding: 16,
+    borderBottomColor: Colors.border1,
+    borderBottomWidth: 1,
+    borderTopColor: Colors.border1,
+    borderTopWidth: 1,
+    gap: 18,
+    paddingVertical: 18,
   },
   top:       { justifyContent: 'space-between', alignItems: 'flex-start' },
-  levelLbl:  { ...Typography.label, color: Colors.accent, marginBottom: 3 },
+  levelLbl:  { ...Typography.label, color: Colors.text3, marginBottom: 3 },
   xpNum:     { ...Typography.h1, color: Colors.text0 },
   streakPill:{
     alignItems: 'center',
-    backgroundColor: Colors.bg3,
+    backgroundColor: Colors.bg2,
     borderRadius: Radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
@@ -600,23 +611,29 @@ function DashboardSkeleton() {
 const S = StyleSheet.create({
   safe:   { backgroundColor: Colors.bg1, flex: 1 },
   scroll: {
-    gap: 12,
+    gap: 16,
     paddingBottom: NAV_BOTTOM_OFFSET + 20,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingTop: Spacing.xl,
   },
   topBar: {
     alignItems: 'center', flexDirection: 'row',
     justifyContent: 'space-between', marginBottom: 4,
   },
   topEyebrow: { ...Typography.bodyXs, color: Colors.text3 },
-  topName:    { ...Typography.h2, color: Colors.text0, marginTop: 1 },
+  topName:    { ...Typography.h1, color: Colors.text0, marginTop: 1 },
   topActions: { alignItems: 'center', flexDirection: 'row', gap: 10 },
   notifBtn: {
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.sm, borderWidth: 1, height: 38, justifyContent: 'center', width: 38,
   },
-  statsRow:   { flexDirection: 'row', gap: 8 },
+  statsRow:   { flexDirection: 'row', gap: 8, marginTop: -4 },
+  sectionBlock: { gap: 10 },
+  openSection: {
+    borderTopColor: Colors.border0,
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
   skillsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   listGap:    { gap: 8 },
   codingRow:  { flexDirection: 'row', gap: 8, marginTop: 8 },
@@ -624,7 +641,7 @@ const S = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.sm, borderWidth: 1, flex: 1, gap: 3, paddingVertical: 12,
   },
-  codingVal:   { fontSize: 20, fontWeight: '700' as const, letterSpacing: -0.2 },
+  codingVal:   { ...Typography.statSm },
   codingLbl:   { ...Typography.bodyXs, color: Colors.text3 },
   updateTitle: { ...Typography.bodySm, color: Colors.text1, flex: 1 },
   seeMoreBtn: {

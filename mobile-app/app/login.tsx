@@ -3,8 +3,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,8 +13,8 @@ import {
 } from 'react-native';
 
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
-import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
-import { Button, ErrorBanner, Input } from '@/components/ui';
+import { Colors, Layout, Radius, Spacing, Surface, Typography } from '@/lib/theme';
+import { Button, Card, ErrorBanner, Input } from '@/components/ui';
 
 export default function LoginScreen() {
   // If a valid session exists, skip login and go straight to the app.
@@ -74,7 +72,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Form card */}
-        <View style={S.card}>
+        <Card style={S.card}>
           <Text style={S.cardTitle}>Welcome back</Text>
           <Text style={S.cardSub}>Sign in to continue</Text>
 
@@ -107,11 +105,11 @@ export default function LoginScreen() {
 
           <Pressable onPress={() => router.push('/register')} style={S.linkRow} hitSlop={8}>
             <Text style={S.linkText}>
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Text style={S.linkAccent}>Register</Text>
             </Text>
           </Pressable>
-        </View>
+        </Card>
       </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>
@@ -123,7 +121,7 @@ const S = StyleSheet.create({
   scroll:{
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Layout.screenPadding,
     paddingVertical: Spacing.xxxl,
     gap: Spacing.xxl,
   },
@@ -146,10 +144,7 @@ const S = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: Colors.bg2,
-    borderColor: Colors.border1,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
+    ...Surface.card,
     gap: Spacing.md,
     padding: Spacing.xl,
   },

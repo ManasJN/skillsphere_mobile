@@ -1,16 +1,20 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TOKEN_STORAGE_KEY, authAPI, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
-import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/theme';
-import { Avatar, Badge, Card, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Surface, Typography } from '@/lib/theme';
+import { Avatar, Badge, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
 import { SkillSheet }           from '@/components/SkillSheet';
@@ -20,6 +24,8 @@ import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
 type Project = { _id?: string; title?: string; status?: string; techStack?: string[]; description?: string };
 
+// Legacy date formatter kept for future profile metadata rows.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function fmtDate(d?: string) {
   if (!d) return '–';
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(d));
@@ -83,7 +89,6 @@ export default function ProfileScreen() {
 
   const handleDeleteSkill = (sk: Skill) => {
     if (!sk._id) return;
-    const { Alert } = require('react-native');
     Alert.alert(
       'Remove skill',
       `Remove "${sk.name}" from your profile?`,
@@ -163,11 +168,11 @@ export default function ProfileScreen() {
             </View>
 
             {/* ── Quick Stats ── */}
-            <Row style={S.statsRow}>
+            <View style={S.metricStrip}>
               <StatChip label="CGPA"   value={String(user?.cgpa ?? '–')} />
-              <StatChip label="Skills" value={String(skills.length)} />
+              <ProfileMetric label="Skills" value={String(skills.length)} />
               <StatChip label="Streak" value={`${user?.streakDays ?? 0}d`} accent={sHealth === 'safe' && (user?.streakDays ?? 0) > 1} />
-            </Row>
+            </View>
 
             {/* ── Achievements ── */}
             {(achLoading || achievements.length > 0) && (
@@ -175,7 +180,7 @@ export default function ProfileScreen() {
             )}
 
             {/* ── Academic Info ── */}
-            <Card style={S.section}>
+            <SectionBlock>
               <Text style={S.sectionTitle}>Academic Details</Text>
               <Divider style={{ marginVertical: 8 }} />
               {[
@@ -196,10 +201,10 @@ export default function ProfileScreen() {
               {!user?.department && !user?.rollNumber && (
                 <EmptyState title="No academic info" body="Ask your admin to update your profile details." />
               )}
-            </Card>
+            </SectionBlock>
 
             {/* ── Coding Profile — always visible, prompts connection if empty ── */}
-            <Card style={S.section}>
+            <SectionBlock>
               <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={S.sectionTitle}>Coding Profile</Text>
                 <Pressable
@@ -241,11 +246,11 @@ export default function ProfileScreen() {
                   </Pressable>
                 </View>
               )}
-            </Card>
+            </SectionBlock>
 
             {/* ── Social Links ── */}
             {user?.socialLinks && Object.values(user.socialLinks).some(Boolean) && (
-              <Card style={S.section}>
+              <SectionBlock>
                 <Text style={S.sectionTitle}>Links</Text>
                 <Divider style={{ marginVertical: 8 }} />
                 {Object.entries(user.socialLinks).filter(([, v]) => v).map(([platform, link]) => (
@@ -254,7 +259,7 @@ export default function ProfileScreen() {
                     <Text style={S.linkVal} numberOfLines={1}>{String(link).replace(/^https?:\/\//, '')}</Text>
                   </Row>
                 ))}
-              </Card>
+              </SectionBlock>
             )}
 
             {/* ── Goals nudge ── */}
@@ -267,7 +272,7 @@ export default function ProfileScreen() {
             </Pressable>
 
             {/* ── Tabbed Content ── */}
-            <Card style={S.tabCard}>
+            <SectionBlock style={S.tabCard}>
               {/* Tab bar */}
               <View style={S.tabBar}>
                 {TABS.map(t => (
@@ -338,7 +343,7 @@ export default function ProfileScreen() {
                       ))}
                     </View>
               )}
-            </Card>
+            </SectionBlock>
 
             {/* ── Sign out ── */}
             <Pressable onPress={handleLogout} style={S.logoutCard}>
@@ -369,6 +374,19 @@ export default function ProfileScreen() {
   );
 }
 
+function SectionBlock({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[S.section, style]}>{children}</View>;
+}
+
+function ProfileMetric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <View style={S.profileMetric}>
+      <Text style={[S.profileMetricValue, accent && S.profileMetricAccent]}>{value}</Text>
+      <Text style={S.profileMetricLabel}>{label}</Text>
+    </View>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <View style={{ gap: 14 }}>
@@ -394,7 +412,7 @@ function ProfileSkeleton() {
 
 const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 14, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 20 },
+  content: { gap: 18, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 22 },
   headerRow: { justifyContent: 'space-between', alignItems: 'center' },
   screenTitle: { ...Typography.h2, color: Colors.text0 },
   signOutBtn: { paddingHorizontal: 2, paddingVertical: 4 },
@@ -404,7 +422,7 @@ const S = StyleSheet.create({
   heroCard: {
     backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.lg,
     borderLeftWidth: 3, borderLeftColor: Colors.accent,
-    borderWidth: 1, gap: 16, overflow: 'hidden', padding: 16,
+    borderWidth: 1, gap: 18, overflow: 'hidden', padding: 16,
   },
   heroGlow: {},
   heroTop: { gap: 16, alignItems: 'flex-start' },
@@ -418,9 +436,26 @@ const S = StyleSheet.create({
   xpVal: { ...Typography.h4, color: Colors.text0 },
   xpSub: { ...Typography.bodySm, color: Colors.text3 },
 
+  metricStrip: {
+    borderBottomColor: Colors.border0,
+    borderBottomWidth: 1,
+    borderTopColor: Colors.border0,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    paddingVertical: 14,
+  },
+  profileMetric: { flex: 1, gap: 2 },
+  profileMetricValue: { ...Typography.statSm, color: Colors.text0 },
+  profileMetricAccent: { color: Colors.accentLight },
+  profileMetricLabel: { ...Typography.bodyXs, color: Colors.text3 },
   statsRow: { gap: 10 },
 
-  section: { gap: 12 },
+  section: {
+    borderTopColor: Colors.border0,
+    borderTopWidth: 1,
+    gap: 12,
+    paddingTop: 16,
+  },
   sectionTitle: { ...Typography.h3, color: Colors.text0 },
   infoRow: { justifyContent: 'space-between', paddingVertical: 5 },
   infoLbl: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
@@ -433,14 +468,14 @@ const S = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12, width: '23%',
   },
-  codingVal: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
+  codingVal: { ...Typography.statSm, color: Colors.text0 },
   codingLbl: { ...Typography.bodySm, color: Colors.text3, textAlign: 'center', fontSize: 10 },
 
   // Tabs
   tabCard: { gap: 16 },
-  tabBar: { backgroundColor: Colors.bg3, borderRadius: Radius.sm, flexDirection: 'row', padding: 4 },
+  tabBar: { ...Surface.inset, flexDirection: 'row', padding: 4 },
   tabBtn: { alignItems: 'center', borderRadius: Radius.xs, flex: 1, paddingVertical: 8 },
-  tabBtnActive: { backgroundColor: Colors.bg2, ...Shadow.sm },
+  tabBtnActive: { backgroundColor: Colors.bg2, borderColor: Colors.border2, borderWidth: 1, ...Shadow.none },
   tabTxt: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
   tabTxtActive: { color: Colors.text0, fontWeight: '700' as const },
 
@@ -504,7 +539,7 @@ const S = StyleSheet.create({
   addSkillTxt: { ...Typography.uiSm, color: Colors.accent },
 
   logoutCard: {
-    alignItems: 'center', backgroundColor: '#1A0808', borderColor: '#3D1010',
+    alignItems: 'center', backgroundColor: Colors.status.dangerBg, borderColor: Colors.status.dangerBorder,
     borderRadius: Radius.md, borderWidth: 1, justifyContent: 'center', marginTop: 6, padding: 16,
   },
   logoutTxt: { ...Typography.ui, color: Colors.danger },

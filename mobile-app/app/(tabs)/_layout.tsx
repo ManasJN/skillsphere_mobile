@@ -23,7 +23,7 @@ import type { ComponentProps } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors } from '@/lib/theme';
+import { Colors, Control, Shadow, Spacing, Typography } from '@/lib/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -40,9 +40,9 @@ const TABS = [
 
 // Fixed base height of the icon+label area (no inset).
 // Matches what Instagram/LinkedIn use: 49pt on iOS, 56dp on Android.
-const TAB_BASE_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
-const TAB_ICON_SIZE = 24;
-const TAB_ICON_BOX = 30;
+const TAB_BASE_HEIGHT = Platform.OS === 'ios' ? 50 : 56;
+const TAB_ICON_SIZE = Control.tabIcon;
+const TAB_ICON_BOX = Control.tabIconBox;
 
 export default function TabLayout() {
   const insets     = useSafeAreaInsets();
@@ -55,8 +55,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor:   Colors.accent,
-        tabBarInactiveTintColor: Colors.text2,
+        tabBarActiveTintColor:   Colors.accentLight,
+        tabBarInactiveTintColor: Colors.text3,
         tabBarShowLabel: true,
         tabBarIconStyle: {
           width: TAB_ICON_BOX,
@@ -64,19 +64,17 @@ export default function TabLayout() {
           marginTop: Platform.OS === 'ios' ? 2 : 4,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          ...Typography.bodyXs,
           fontWeight: '600' as const,
-          // Tighten the gap between icon and label
           marginTop: 0,
-          // On Android, prevent label touching the gesture bar
-          marginBottom: Platform.OS === 'android' ? 2 : 0,
+          marginBottom: Platform.OS === 'android' ? Spacing.xxs : 0,
           letterSpacing: 0,
         },
         tabBarItemStyle: {
           // Each item fills its cell. paddingTop pushes icon+label group
           // slightly down from the bar top so the visual centre sits at ~40%
           // of the base height — matching how iOS renders its native tab bar.
-          paddingTop: Platform.OS === 'ios' ? 6 : 8,
+          paddingTop: Platform.OS === 'ios' ? Spacing.sm : Spacing.sm,
           paddingBottom: 0,
         },
         tabBarStyle: {
@@ -89,16 +87,12 @@ export default function TabLayout() {
           height: barHeight,
           // Only the base area has visible styling — the safe inset area
           // below is the same background colour, invisible.
-          backgroundColor: Colors.bg2,
+          backgroundColor: Colors.bg1,
           borderTopWidth: 1,
-          borderTopColor: Colors.border1,
+          borderTopColor: Colors.border0,
           // Elevation must be > 0 on Android edge-to-edge to render above
           // the system navigation bar. 8 is safe across all OEMs.
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -1 },
-          shadowOpacity: 0.10,
-          shadowRadius: 3,
+          ...Shadow.hairline,
           // No paddingBottom here — barHeight already includes safeBottom.
           // React Navigation sets paddingBottom from safeAreaInsets when
           // position:'absolute' is NOT set. Since we ARE setting it, RN
@@ -116,6 +110,7 @@ export default function TabLayout() {
               <TabIcon
                 name={(focused ? icon : iconOut) as IoniconName}
                 color={color}
+                focused={focused}
               />
             ),
           }}
@@ -132,11 +127,12 @@ export default function TabLayout() {
 }
 
 function TabIcon({
-  name, color,
-}: { name: IoniconName; color: string }) {
+  name, color, focused,
+}: { name: IoniconName; color: string; focused: boolean }) {
   return (
     <View pointerEvents="none" style={S.iconBox}>
       <Ionicons name={name} size={TAB_ICON_SIZE} color={color} style={S.icon} />
+      {focused ? <View style={S.activeDot} /> : null}
     </View>
   );
 }
@@ -149,6 +145,14 @@ const S = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
     overflow: 'visible',
+  },
+  activeDot: {
+    backgroundColor: Colors.accent,
+    borderRadius: 2,
+    bottom: -2,
+    height: 3,
+    position: 'absolute',
+    width: 14,
   },
   icon: {
     textAlign: 'center',

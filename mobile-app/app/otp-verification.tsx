@@ -3,7 +3,6 @@ import { isAxiosError } from 'axios';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
-import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
+import { Colors, Layout, Radius, Spacing, Surface, Typography } from '@/lib/theme';
+import { Button, ErrorBanner } from '@/components/ui';
 
 const OTP_LENGTH = 6;
 
@@ -37,38 +37,48 @@ export default function OtpVerificationScreen() {
   };
 
   const handleVerify = async () => {
-    if (!email) { setError('Email missing. Please register again.'); return; }
-    if (otp.length !== OTP_LENGTH) { setError('Enter the full 6-digit code.'); return; }
-    setError(''); setMessage(''); setIsVerifying(true);
+    if (!email) {
+      setError('Email missing. Please register again.');
+      return;
+    }
+    if (otp.length !== OTP_LENGTH) {
+      setError('Enter the full 6-digit code.');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setIsVerifying(true);
     try {
       const res = await authAPI.verifyOtp(email, otp);
-      // Server returns a token automatically after verification (sendTokenResponse).
-      // Store it so the user is logged in immediately — no need to re-enter credentials.
       const token = res.data?.token ?? res.data?.accessToken ?? res.data?.jwt;
-      if (token) {
-        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-      }
-      // Route to main app. If no token was returned (shouldn't happen), the auth
-      // gate on next open will redirect to login.
+      if (token) await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
       router.replace('/(tabs)');
     } catch (err) {
       if (isAxiosError(err)) {
         if (err.response?.data?.message) setError(err.response.data.message);
         else if (err.request) setError('Cannot reach server. Check your connection.');
         else setError('Verification failed. Please try again.');
-      } else { setError('Verification failed. Please try again.'); }
-    } finally { setIsVerifying(false); }
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResend = async () => {
-    if (!email) { setError('Email missing.'); return; }
-    setError(''); setMessage(''); setIsResending(true);
+    if (!email) {
+      setError('Email missing.');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setIsResending(true);
     await new Promise(r => setTimeout(r, 800));
     setMessage('A fresh code is on its way. Check your inbox.');
     setIsResending(false);
   };
 
-  // Mask email for display
   const maskedEmail = email
     ? email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + '*'.repeat(Math.min(b.length, 5)) + c)
     : 'your email';
@@ -78,18 +88,14 @@ export default function OtpVerificationScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.kav}>
-
         <View style={styles.container}>
-
-          {/* Back */}
           <Pressable hitSlop={16} onPress={() => router.back()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>Back</Text>
           </Pressable>
 
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconWrap}>
-              <Text style={styles.iconEmoji}>OTP</Text>
+              <Text style={styles.iconText}>OTP</Text>
             </View>
             <Text style={styles.title}>Check your email</Text>
             <Text style={styles.sub}>
@@ -98,7 +104,6 @@ export default function OtpVerificationScreen() {
             </Text>
           </View>
 
-          {/* OTP boxes */}
           <Pressable onPress={() => inputRef.current?.focus()} style={styles.otpRow}>
             {Array.from({ length: OTP_LENGTH }).map((_, i) => {
               const char = otp[i] ?? '';
@@ -113,13 +118,12 @@ export default function OtpVerificationScreen() {
                     isFilled && styles.otpBoxFilled,
                   ]}>
                   <Text style={styles.otpChar}>{char}</Text>
-                  {isActive && <View style={styles.cursor} />}
+                  {isActive ? <View style={styles.cursor} /> : null}
                 </View>
               );
             })}
           </Pressable>
 
-          {/* Hidden real input */}
           <TextInput
             ref={inputRef}
             autoFocus
@@ -133,46 +137,30 @@ export default function OtpVerificationScreen() {
             value={otp}
           />
 
-          {/* Feedback */}
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorDot}>●</Text>
-              <Text style={styles.errorMsg}>{error}</Text>
-            </View>
-          ) : null}
+          {error ? <ErrorBanner message={error} /> : null}
           {message ? (
             <View style={styles.messageBox}>
               <Text style={styles.messageMsg}>{message}</Text>
             </View>
           ) : null}
 
-          {/* Verify CTA */}
-          <Pressable
+          <Button
             disabled={!canVerify}
+            full
+            label="Verify code"
+            loading={isVerifying}
             onPress={handleVerify}
-            style={({ pressed }) => [
-              styles.cta,
-              !canVerify && styles.ctaDisabled,
-              pressed && canVerify && styles.ctaPressed,
-            ]}>
-            {isVerifying
-              ? <ActivityIndicator color={Colors.bg1} size="small" />
-              : <Text style={styles.ctaText}>Verify code</Text>}
-          </Pressable>
+          />
 
-          {/* Resend */}
           <View style={styles.resendRow}>
-            <Text style={styles.resendLabel}>Didn't receive it?</Text>
+            <Text style={styles.resendLabel}>Did not receive it?</Text>
             <Pressable
               disabled={isVerifying || isResending}
               hitSlop={8}
               onPress={handleResend}>
-              {isResending
-                ? <ActivityIndicator color={Colors.accentLight} size="small" />
-                : <Text style={styles.resendLink}>Resend code</Text>}
+              <Text style={styles.resendLink}>{isResending ? 'Sending' : 'Resend code'}</Text>
             </Pressable>
           </View>
-
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -182,59 +170,56 @@ export default function OtpVerificationScreen() {
 const styles = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
   kav: { flex: 1 },
-  container: { flex: 1, gap: 24, paddingHorizontal: 28, paddingTop: 20, paddingBottom: 40 },
+  container: {
+    flex: 1,
+    gap: Spacing.xl,
+    paddingBottom: 40,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: Spacing.xl,
+  },
 
   back: { alignSelf: 'flex-start' },
   backText: { ...Typography.uiSm, color: Colors.text3 },
 
-  header: { alignItems: 'center', gap: 14, paddingTop: 16 },
+  header: { alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.lg },
   iconWrap: {
-    alignItems: 'center', backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
-    borderRadius: Radius.xl, borderWidth: 1, height: 72, justifyContent: 'center', width: 72,
+    alignItems: 'center',
+    ...Surface.selected,
+    height: 64,
+    justifyContent: 'center',
+    width: 64,
   },
-  iconEmoji: { fontSize: 32 },
+  iconText: { ...Typography.h4, color: Colors.accentLight },
   title: { ...Typography.h1, color: Colors.text0, textAlign: 'center' },
-  sub: { ...Typography.body, color: Colors.text2, textAlign: 'center', lineHeight: 24 },
-  emailHighlight: { color: Colors.accentLight, fontWeight: '700' },
+  sub: { ...Typography.body, color: Colors.text2, textAlign: 'center' },
+  emailHighlight: { color: Colors.accentLight, fontWeight: '700' as const },
 
-  // OTP
-  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  otpRow: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
   otpBox: {
-    alignItems: 'center', backgroundColor: Colors.bg4, borderColor: Colors.border1,
-    borderRadius: Radius.md, borderWidth: 1.5, height: 60, justifyContent: 'center',
-    position: 'relative', width: 48,
+    alignItems: 'center',
+    ...Surface.inset,
+    height: 56,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 46,
   },
   otpBoxActive: { borderColor: Colors.accent },
   otpBoxFilled: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
-  otpChar: { color: Colors.text0, fontSize: 24, fontWeight: '700' },
+  otpChar: { ...Typography.h2, color: Colors.text0 },
   cursor: {
-    backgroundColor: Colors.accent, borderRadius: 1,
-    bottom: 10, height: 2, position: 'absolute', width: 20,
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.xs,
+    bottom: 10,
+    height: 2,
+    position: 'absolute',
+    width: 18,
   },
   hiddenInput: { height: 1, opacity: 0, position: 'absolute', width: 1 },
 
-  errorBox: {
-    alignItems: 'flex-start', backgroundColor: '#1A0808', borderColor: '#3D1010',
-    borderRadius: Radius.sm, borderWidth: 1, flexDirection: 'row', gap: 8, padding: Spacing.md,
-  },
-  errorDot: { color: Colors.danger, fontSize: 10, marginTop: 3 },
-  errorMsg: { ...Typography.bodySm, color: Colors.danger, flex: 1 },
-  messageBox: {
-    backgroundColor: Colors.accentDim, borderColor: Colors.accentMid,
-    borderRadius: Radius.sm, borderWidth: 1, padding: Spacing.md,
-  },
+  messageBox: { ...Surface.selected, padding: Spacing.md },
   messageMsg: { ...Typography.bodySm, color: Colors.accentLight, textAlign: 'center' },
 
-  cta: {
-    alignItems: 'center', backgroundColor: Colors.accent, borderRadius: Radius.md,
-    elevation: 8, height: 54, justifyContent: 'center',
-    shadowOpacity: 0,
-  },
-  ctaDisabled: { opacity: 0.45, shadowOpacity: 0 },
-  ctaPressed: { opacity: 0.85, transform: [{ scale: 0.975 }] },
-  ctaText: { color: Colors.bg1, fontSize: 15, fontWeight: '700' },
-
-  resendRow: { alignItems: 'center', flexDirection: 'row', gap: 6, justifyContent: 'center' },
+  resendRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
   resendLabel: { ...Typography.bodySm, color: Colors.text3 },
-  resendLink: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '700' },
+  resendLink: { ...Typography.bodySm, color: Colors.accentLight, fontWeight: '700' as const },
 });

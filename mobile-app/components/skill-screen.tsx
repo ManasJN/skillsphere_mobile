@@ -1,15 +1,16 @@
-/**
- * skill-screen.tsx — legacy wrapper, retained for compatibility.
- * Use @/components/ui for all new components.
- */
-export { Colors as palette } from '@/lib/theme';
-export { Card } from '@/components/ui';
-
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing } from '@/lib/theme';
+
+import { Colors, Layout, NAV_BOTTOM_OFFSET, Spacing, Typography } from '@/lib/theme';
+
+/**
+ * Legacy wrapper retained for compatibility.
+ * Use @/components/ui for all new components.
+ */
+export { Colors as palette } from '@/lib/theme';
+export { Card } from '@/components/ui';
 
 type SkillScreenProps = {
   eyebrow: string;
@@ -51,14 +52,19 @@ export function Metric({ label, value }: { label: string; value: string }) {
 }
 
 const S = StyleSheet.create({
-  safe:    { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 16, paddingBottom: 34, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl },
-  header:  { gap: 6 },
+  safe: { backgroundColor: Colors.bg1, flex: 1 },
+  content: {
+    gap: Layout.screenGap,
+    paddingBottom: NAV_BOTTOM_OFFSET,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: Spacing.xl,
+  },
+  header: { gap: Spacing.sm },
   eyebrow: { ...Typography.label, color: Colors.accent },
-  title:   { ...Typography.h1, color: Colors.text0 },
-  subtitle:{ ...Typography.body, color: Colors.text2 },
+  title: { ...Typography.h1, color: Colors.text0 },
+  subtitle: { ...Typography.body, color: Colors.text2 },
   sectionTitle: { ...Typography.h3, color: Colors.text0 },
-  metric:  { flex: 1, gap: 3 },
+  metric: { flex: 1, gap: Spacing.xs },
   metricValue: { ...Typography.statSm, color: Colors.text0 },
   metricLabel: { ...Typography.bodyXs, color: Colors.text3, fontWeight: '600' as const },
 });

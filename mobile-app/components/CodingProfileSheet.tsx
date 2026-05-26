@@ -32,7 +32,7 @@ import {
 
 import { usersAPI } from '@/lib/api';
 import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
-import { Divider, ErrorBanner, ProgressBar, Row } from '@/components/ui';
+import { Divider, ErrorBanner, Row } from '@/components/ui';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -407,8 +407,8 @@ const pS = StyleSheet.create({
   dot:      { borderRadius: Radius.full, height: 10, width: 10 },
   name:     { ...Typography.h4, color: Colors.text0, flex: 1 },
   connectedBadge: {
-    alignItems: 'center', backgroundColor: '#0A1A12',
-    borderColor: '#163324', borderRadius: Radius.xs, borderWidth: 1,
+    alignItems: 'center', backgroundColor: Colors.status.successBg,
+    borderColor: Colors.status.successBorder, borderRadius: Radius.xs, borderWidth: 1,
     flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingVertical: 3,
   },
   connectedTxt: { ...Typography.bodyXs, color: Colors.success, fontWeight: '600' as const },
@@ -449,7 +449,7 @@ const S = StyleSheet.create({
     alignItems: 'center', flex: 1, gap: 3,
     backgroundColor: Colors.bg4, borderRadius: Radius.xs, paddingVertical: 8,
   },
-  statVal:     { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
+  statVal:     { ...Typography.statSm },
   statLbl:     { ...Typography.bodyXs, color: Colors.text3 },
   breakdownBar:{ borderRadius: Radius.full, flexDirection: 'row', height: 4, overflow: 'hidden', marginTop: 2 },
 

@@ -1,137 +1,179 @@
 /**
- * SkillSphere Design System — v3
- * Human-crafted. Notion/Linear/Todoist inspired.
- * Charcoal dark theme. Sky-blue accent only where it earns its place.
- * No neon. No glow. No oversaturated gradients.
+ * SkillSphere design system.
+ *
+ * Dark-only, compact, border-led UI inspired by Linear, GitHub, Raycast,
+ * and Notion. Keep new components on these tokens instead of hardcoded
+ * colors, spacing, radii, shadows, or ad hoc type sizes.
  */
 
-// ─── Color Tokens ─────────────────────────────────────────────────────────────
-
 export const Colors = {
-  // Backgrounds — natural graphite, not deep-space black
-  bg0:  '#0D0F11',   // absolute deepest (status bar, edge bleed)
-  bg1:  '#111315',   // default screen background
-  bg2:  '#161A1D',   // card / surface
-  bg3:  '#1C2025',   // elevated card / input background
-  bg4:  '#222830',   // chip / tag / subtle surface
+  bg0: '#090B0D',
+  bg1: '#0D0F12',
+  bg2: '#121519',
+  bg3: '#171B20',
+  bg4: '#1D232A',
 
-  // Borders — barely visible, just enough structure
-  border0: '#1E2329',   // hairline separator
-  border1: '#252D36',   // card border (default)
-  border2: '#2E3844',   // focused / interactive
-  border3: '#3A4858',   // strong emphasis
+  border0: '#1A2027',
+  border1: '#252C35',
+  border2: '#323B46',
+  border3: '#46515E',
 
-  // Sky-blue accent — used sparingly: active states, progress, key numbers
-  accent:      '#5DADE2',  // primary sky blue
-  accentLight: '#7EC8F0',  // lighter tint for text on dark
-  accentDim:   '#0E1E2E',  // very dark tinted surface
-  accentSoft:  '#122030',  // tinted card background
-  accentMid:   '#1E3A52',  // tinted border
+  accent: '#8AB4F8',
+  accentLight: '#B8D1FF',
+  accentDim: '#101823',
+  accentSoft: '#162233',
+  accentMid: '#2A3B55',
 
-  // Semantic — muted, not loud
-  success: '#52B788',
-  warning: '#E9B558',
-  danger:  '#D16666',
-  info:    '#5DADE2',  // same as accent — info uses the sky-blue
+  success: '#78C690',
+  warning: '#D2A85F',
+  danger: '#D97979',
+  info: '#8AB4F8',
 
-  // Text — natural hierarchy, not harsh white-on-black
-  text0: '#F2F4F7',   // headings / primary
-  text1: '#C4CBD6',   // body
-  text2: '#8E99A8',   // secondary / captions
-  text3: '#5A6472',   // disabled / hints
-  text4: '#3D4752',   // placeholder
+  text0: '#F1F3F5',
+  text1: '#CAD0D8',
+  text2: '#99A2AE',
+  text3: '#6D7683',
+  text4: '#4D5663',
 
-  // Skill category palette — muted, not neon
+  overlay: 'rgba(0, 0, 0, 0.48)',
+
+  status: {
+    dangerBg: '#1B0E10',
+    dangerBorder: '#3C1B21',
+    successBg: '#0D1A13',
+    successBorder: '#1C3A27',
+    warningBg: '#1B160A',
+    warningBorder: '#3A2D12',
+  },
+
   skill: {
-    'Web Development': '#5DADE2',
-    'AI/ML':           '#9B8FD4',
-    'Cloud':           '#52B788',
-    'DSA':             '#7F8FD4',
-    'UI/UX':           '#C47AB0',
-    'Data Science':    '#D4935A',
-    'Mobile':          '#5DB888',
-    'DevOps':          '#7A8FA0',
-    default:           '#5A6472',
+    'Web Development': '#8AB4F8',
+    'AI/ML': '#A6A1D8',
+    Cloud: '#78C690',
+    DSA: '#98A6D8',
+    'UI/UX': '#C793B7',
+    'Data Science': '#D0A06A',
+    Mobile: '#7BC798',
+    DevOps: '#8A99A8',
+    default: '#737D8A',
   },
 } as const;
 
-// ─── Spacing — follows 4pt grid, realistic not mechanical ────────────────────
-
 export const Spacing = {
-  xs:    4,
-  sm:    8,
-  md:   12,
-  lg:   16,
-  xl:   20,
-  xxl:  28,
+  none: 0,
+  xxs: 2,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 28,
   xxxl: 36,
 } as const;
 
-// ─── Border Radius — restrained, not bubbly ───────────────────────────────────
-
 export const Radius = {
-  xs:   4,
-  sm:   6,
-  md:   8,
-  lg:  12,
-  xl:  16,
-  xxl: 20,
+  none: 0,
+  xs: 4,
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 12,
+  xxl: 16,
   full: 9999,
 } as const;
 
-// ─── Typography — clean weight hierarchy, mobile-first sizing ─────────────────
-
 export const Typography = {
-  // Headings
-  h1:    { fontSize: 26, fontWeight: '700' as const, letterSpacing: -0.4, lineHeight: 32 },
-  h2:    { fontSize: 20, fontWeight: '600' as const, letterSpacing: -0.2, lineHeight: 26 },
-  h3:    { fontSize: 16, fontWeight: '600' as const, letterSpacing: -0.1, lineHeight: 22 },
-  h4:    { fontSize: 14, fontWeight: '600' as const, lineHeight: 20 },
+  h1: { fontSize: 26, fontWeight: '700' as const, letterSpacing: 0, lineHeight: 32 },
+  h2: { fontSize: 20, fontWeight: '600' as const, letterSpacing: 0, lineHeight: 26 },
+  h3: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0, lineHeight: 22 },
+  h4: { fontSize: 14, fontWeight: '600' as const, letterSpacing: 0, lineHeight: 20 },
 
-  // Body
-  body:   { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  bodySm: { fontSize: 13, fontWeight: '400' as const, lineHeight: 19 },
-  bodyXs: { fontSize: 12, fontWeight: '400' as const, lineHeight: 17 },
+  body: { fontSize: 15, fontWeight: '400' as const, letterSpacing: 0, lineHeight: 22 },
+  bodySm: { fontSize: 13, fontWeight: '400' as const, letterSpacing: 0, lineHeight: 19 },
+  bodyXs: { fontSize: 12, fontWeight: '400' as const, letterSpacing: 0, lineHeight: 17 },
 
-  // UI labels
-  label:  { fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.6, textTransform: 'uppercase' as const },
-  ui:     { fontSize: 15, fontWeight: '600' as const, letterSpacing: 0.1 },
-  uiSm:   { fontSize: 13, fontWeight: '500' as const },
-  mono:   { fontSize: 13, fontWeight: '600' as const },
+  label: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    letterSpacing: 0.4,
+    lineHeight: 15,
+    textTransform: 'uppercase' as const,
+  },
+  ui: { fontSize: 15, fontWeight: '600' as const, letterSpacing: 0, lineHeight: 20 },
+  uiSm: { fontSize: 13, fontWeight: '500' as const, letterSpacing: 0, lineHeight: 18 },
+  mono: { fontSize: 13, fontWeight: '600' as const, letterSpacing: 0, lineHeight: 18 },
 
-  // Stats
-  stat:   { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.6 },
-  statSm: { fontSize: 20, fontWeight: '700' as const, letterSpacing: -0.3 },
+  stat: { fontSize: 28, fontWeight: '700' as const, letterSpacing: 0, lineHeight: 34 },
+  statSm: { fontSize: 20, fontWeight: '700' as const, letterSpacing: 0, lineHeight: 25 },
 } as const;
 
-// ─── Shadows — subtle elevation, not dramatic ─────────────────────────────────
+export const IconSize = {
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 20,
+  xl: 24,
+} as const;
+
+export const Control = {
+  inputHeight: 48,
+  buttonHeight: 46,
+  buttonSmallHeight: 34,
+  iconButton: 38,
+  tabIcon: 22,
+  tabIconBox: 30,
+} as const;
+
+export const Layout = {
+  screenPadding: Spacing.lg,
+  screenGap: Spacing.md,
+  sectionGap: Spacing.sm,
+  cardPadding: Spacing.lg,
+  rowGap: Spacing.sm,
+} as const;
+
+export const Surface = {
+  screen: {
+    backgroundColor: Colors.bg1,
+  },
+  card: {
+    backgroundColor: Colors.bg2,
+    borderColor: Colors.border1,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  inset: {
+    backgroundColor: Colors.bg3,
+    borderColor: Colors.border1,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  selected: {
+    backgroundColor: Colors.accentDim,
+    borderColor: Colors.accentMid,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  danger: {
+    backgroundColor: Colors.status.dangerBg,
+    borderColor: Colors.status.dangerBorder,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+} as const;
 
 export const Shadow = {
-  // Barely-there depth for cards
-  sm: {
+  none: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  hairline: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.18,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  // Standard card
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  // Modal / overlay
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
 } as const;
 
-// ─── Nav heights ──────────────────────────────────────────────────────────────
-export const NAV_BOTTOM_OFFSET = 90; // scroll padding to clear the tab bar (56px bar + ~34px inset allowance)
+export const NAV_BOTTOM_OFFSET = 88;

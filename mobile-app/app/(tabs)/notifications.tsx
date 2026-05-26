@@ -215,6 +215,7 @@ const S = StyleSheet.create({
   safe: { backgroundColor: Colors.bg1, flex: 1 },
   content: { gap: 14, paddingBottom: NAV_BOTTOM_OFFSET + 20, paddingHorizontal: 18, paddingTop: 20 },
   header: { justifyContent: 'space-between', alignItems: 'flex-end' },
+  backBtn: { alignItems: 'center', height: 38, justifyContent: 'center', width: 32 },
   eyebrow: { ...Typography.label, color: Colors.accent, fontSize: 10 },
   title: { ...Typography.h2, color: Colors.text0 },
   markAllBtn: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderRadius: Radius.full, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 7 },

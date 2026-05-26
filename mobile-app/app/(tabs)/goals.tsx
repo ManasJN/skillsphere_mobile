@@ -497,8 +497,8 @@ function StatPill({ label, value, accent, danger }: {
   label: string; value: number; accent?: boolean; danger?: boolean;
 }) {
   const textColor = danger ? Colors.danger : accent ? Colors.success : Colors.text2;
-  const bg        = danger ? '#1A0808' : accent ? '#0A1A12' : Colors.bg3;
-  const bdr       = danger ? '#3D1010' : accent ? '#163324' : Colors.border1;
+  const bg        = danger ? Colors.status.dangerBg : accent ? Colors.status.successBg : Colors.bg3;
+  const bdr       = danger ? Colors.status.dangerBorder : accent ? Colors.status.successBorder : Colors.border1;
   return (
     <View style={[spS.pill, { backgroundColor: bg, borderColor: bdr }]}>
       <Text style={[spS.val, { color: textColor }]}>{value}</Text>

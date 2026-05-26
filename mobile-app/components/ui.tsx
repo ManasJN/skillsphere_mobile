@@ -16,13 +16,12 @@ import {
   Text,
   TextInput,
   View,
-  type PressableProps,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
 
-import { Colors, Radius, Shadow, Spacing, Typography } from '@/lib/theme';
+import { Colors, Control, Layout, Radius, Shadow, Spacing, Surface, Typography } from '@/lib/theme';
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +39,18 @@ export function Card({ children, style, accent, flat }: CardProps) {
       {children}
     </View>
   );
+}
+
+export function Screen({
+  children, style,
+}: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[S.screen, style]}>{children}</View>;
+}
+
+export function Content({
+  children, style,
+}: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[S.content, style]}>{children}</View>;
 }
 
 // ─── Button ───────────────────────────────────────────────────────────────────
@@ -375,14 +386,20 @@ export function ErrorBanner({ message }: { message: string }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
+  screen: {
+    ...Surface.screen,
+    flex: 1,
+  },
+  content: {
+    gap: Layout.screenGap,
+    paddingHorizontal: Layout.screenPadding,
+  },
+
   // Card
   card: {
-    backgroundColor: Colors.bg2,
-    borderColor: Colors.border1,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    padding: Spacing.lg,
-    ...Shadow.sm,
+    ...Surface.card,
+    padding: Layout.cardPadding,
+    ...Shadow.none,
   },
   cardAccent: {
     borderLeftWidth: 2,
@@ -405,17 +422,17 @@ const S = StyleSheet.create({
   btn: {
     alignItems: 'center',
     borderRadius: Radius.md,
-    height: 50,
+    height: Control.buttonHeight,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.xl,
   },
-  btnSm:   { height: 36, paddingHorizontal: 14, borderRadius: Radius.sm },
+  btnSm:   { height: Control.buttonSmallHeight, paddingHorizontal: Spacing.md, borderRadius: Radius.sm },
   btnFull: { width: '100%' },
   btnPrimary:   { backgroundColor: Colors.accent },
-  btnSecondary: { backgroundColor: Colors.bg3, borderColor: Colors.border2, borderWidth: 1 },
+  btnSecondary: { ...Surface.inset },
   btnGhost:     { backgroundColor: 'transparent', borderColor: Colors.border2, borderWidth: 1 },
-  btnDanger:    { backgroundColor: '#1C0A0A', borderColor: '#3D1414', borderWidth: 1 },
-  btnTinted:    { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid, borderWidth: 1 },
+  btnDanger:    { ...Surface.danger },
+  btnTinted:    { ...Surface.selected },
   btnOff:       { opacity: 0.4 },
   btnPressed:   { opacity: 0.75 },
   btnTxt:       { ...Typography.ui, color: Colors.text0 },
@@ -431,15 +448,12 @@ const S = StyleSheet.create({
   inputLabel:       { ...Typography.uiSm, color: Colors.text1, fontWeight: '500' as const },
   inputBox: {
     alignItems: 'center',
-    backgroundColor: Colors.bg3,
-    borderColor: Colors.border1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    ...Surface.inset,
     flexDirection: 'row',
   },
   inputBoxFocused:  { borderColor: Colors.accent },
   inputBoxDisabled: { opacity: 0.5 },
-  inputText:        { color: Colors.text0, flex: 1, fontSize: 15, height: 50, paddingHorizontal: 14 },
+  inputText:        { ...Typography.body, color: Colors.text0, flex: 1, height: Control.inputHeight, paddingHorizontal: Spacing.md },
   inputMultiline:   { height: undefined, minHeight: 90, paddingTop: 13, textAlignVertical: 'top' },
   inputRight:       { paddingRight: 12 },
 
@@ -528,10 +542,7 @@ const S = StyleSheet.create({
   // Error
   errBanner: {
     alignItems: 'flex-start',
-    backgroundColor: '#1A0808',
-    borderColor: '#3D1010',
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    ...Surface.danger,
     flexDirection: 'row',
     gap: 10,
     padding: 12,
