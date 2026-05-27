@@ -18,7 +18,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Pressable, RefreshControl, ScrollView,
+  Animated, Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, View,
   type StyleProp,
   type ViewStyle,
@@ -32,7 +32,7 @@ import {
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Spacing, Typography } from '@/lib/theme';
 import {
   Avatar, Badge, Card, Divider, EmptyState, ErrorBanner,
-  GoalItem, ProgressBar, Row, SectionHeader,
+  FadeView, GoalItem, ProgressBar, Row, SectionHeader,
   Skeleton, SkeletonCard, StatChip,
 } from '@/components/ui';
 import { InsightBar }  from '@/components/InsightBar';
@@ -42,6 +42,7 @@ import {
   topInsight, streakHealth, xpToNextLevel,
   type Goal as PGoal,
 } from '@/hooks/useProductivity';
+import { usePressScale, useFadeSlideIn } from '@/hooks/useAnimations';
 
 // ─── Local types ──────────────────────────────────────────────────────────────
 
@@ -160,26 +161,10 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* ── Top Bar ── */}
-        <View style={S.topBar}>
-          <View>
-            <Text style={S.topEyebrow}>{greeting()}</Text>
-            <Text style={S.topName}>{name}</Text>
-          </View>
-          <View style={S.topActions}>
-            <Pressable
-              onPress={() => router.push('/(tabs)/notifications')}
-              style={S.notifBtn}
-              hitSlop={8}>
-              <Ionicons name="notifications-outline" size={22} color={Colors.text2} />
-            </Pressable>
-            <Pressable onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
-              <Avatar initials={getInitials(user?.name)} size={38} />
-            </Pressable>
-          </View>
-        </View>
+        <TopBarAnimated name={name} user={user} />
 
         {loading ? <DashboardSkeleton /> : (
-          <>
+          <FadeView delay={50}>
             {error ? <ErrorBanner message={error} /> : null}
 
             {/* ── Contextual insight bar ── */}
@@ -241,16 +226,14 @@ export default function HomeScreen() {
               ) : (
                 <View style={S.listGap}>
                   {goals.slice(0, 3).map((g, i) => (
-                    <Pressable
+                    <GoalItem
                       key={i}
-                      onPress={() => router.push('/(tabs)/goals')}>
-                      <GoalItem
-                        title={g.title ?? ''}
-                        progress={g.progress ?? 0}
-                        priority={g.priority as any}
-                        deadline={fmtDate(g.deadline)}
-                      />
-                    </Pressable>
+                      title={g.title ?? ''}
+                      progress={g.progress ?? 0}
+                      priority={g.priority as any}
+                      deadline={fmtDate(g.deadline)}
+                      onPress={() => router.push('/(tabs)/goals')}
+                    />
                   ))}
                   {goals.length > 3 && (
                     <Pressable
@@ -357,14 +340,48 @@ export default function HomeScreen() {
                 </View>
               </SectionBlock>
             )}
-          </>
+          </FadeView>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── XPCard — rewritten with streak health + XP-to-next-level ───────────────
+// ─── TopBarAnimated — fade+slide entrance for the header ─────────────────────
+
+function TopBarAnimated({ name, user }: { name: string; user: User | null }) {
+  const { opacity, translateY } = useFadeSlideIn(0, 6);
+  const { scale: nScale, onPressIn: nIn, onPressOut: nOut } = usePressScale(0.92);
+  const { scale: aScale, onPressIn: aIn, onPressOut: aOut } = usePressScale(0.93);
+  return (
+    <Animated.View style={[S.topBar, { opacity, transform: [{ translateY }] }]}>
+      <View>
+        <Text style={S.topEyebrow}>{greeting()}</Text>
+        <Text style={S.topName}>{name}</Text>
+      </View>
+      <View style={S.topActions}>
+        <Pressable
+          onPress={() => router.push('/(tabs)/notifications')}
+          onPressIn={nIn}
+          onPressOut={nOut}
+          hitSlop={8}>
+          <Animated.View style={[S.notifBtn, { transform: [{ scale: nScale }] }]}>
+            <Ionicons name="notifications-outline" size={22} color={Colors.text2} />
+          </Animated.View>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/(tabs)/profile')}
+          onPressIn={aIn}
+          onPressOut={aOut}
+          hitSlop={8}>
+          <Animated.View style={{ transform: [{ scale: aScale }] }}>
+            <Avatar initials={getInitials(user?.name)} size={38} />
+          </Animated.View>
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}
 
 function SectionBlock({
   children,
@@ -507,21 +524,27 @@ const pjS = StyleSheet.create({
 });
 
 function OppRow({ opp }: { opp: Opp }) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.98);
   return (
-    <View style={opS.wrap}>
-      <Row style={opS.top}>
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text style={opS.title} numberOfLines={1}>{opp.title}</Text>
-          <Text style={opS.company}>{opp.company}</Text>
-        </View>
-        <View style={{ gap: 5, alignItems: 'flex-end' }}>
-          <Badge label={opp.type ?? 'opportunity'} color={oppBadge(opp.type)} />
-          {opp.matchScore != null && (
-            <Text style={opS.match}>{opp.matchScore}% match</Text>
-          )}
-        </View>
-      </Row>
-    </View>
+    <Pressable
+      onPress={() => router.push('/(tabs)/opportunities')}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}>
+      <Animated.View style={[opS.wrap, { transform: [{ scale }] }]}>
+        <Row style={opS.top}>
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={opS.title} numberOfLines={1}>{opp.title}</Text>
+            <Text style={opS.company}>{opp.company}</Text>
+          </View>
+          <View style={{ gap: 5, alignItems: 'flex-end' }}>
+            <Badge label={opp.type ?? 'opportunity'} color={oppBadge(opp.type)} />
+            {opp.matchScore != null && (
+              <Text style={opS.match}>{opp.matchScore}% match</Text>
+            )}
+          </View>
+        </Row>
+      </Animated.View>
+    </Pressable>
   );
 }
 const opS = StyleSheet.create({

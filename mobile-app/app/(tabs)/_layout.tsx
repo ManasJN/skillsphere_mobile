@@ -20,10 +20,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs }  from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Control, Shadow, Spacing, Typography } from '@/lib/theme';
+import { useTabFocus } from '@/hooks/useAnimations';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -129,9 +130,12 @@ export default function TabLayout() {
 function TabIcon({
   name, color, focused,
 }: { name: IoniconName; color: string; focused: boolean }) {
+  const { scale, opacity } = useTabFocus(focused);
   return (
     <View pointerEvents="none" style={S.iconBox}>
-      <Ionicons name={name} size={TAB_ICON_SIZE} color={color} style={S.icon} />
+      <Animated.View style={{ transform: [{ scale }], opacity }}>
+        <Ionicons name={name} size={TAB_ICON_SIZE} color={color} style={S.icon} />
+      </Animated.View>
       {focused ? <View style={S.activeDot} /> : null}
     </View>
   );

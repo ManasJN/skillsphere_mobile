@@ -20,6 +20,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  Animated,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -31,11 +32,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Spacing, Typography } from '@/lib/theme';
 import {
-  Badge, BadgeColor, Divider, EmptyState, ErrorBanner,
+  Badge, BadgeColor, Divider, EmptyState, ErrorBanner, FadeView,
   ProgressBar, Row, Skeleton,
 } from '@/components/ui';
 import { GoalSheet } from '@/components/GoalSheet';
 import { type Goal, type GoalDraft, useGoals } from '@/hooks/useGoals';
+import { useFadeSlideIn, usePressScale } from '@/hooks/useAnimations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,44 +167,7 @@ export default function GoalsScreen() {
 
       {/* ── Sticky header ── */}
       <View style={S.stickyHead}>
-        <Row style={S.titleRow}>
-          <View>
-            <Text style={S.eyebrow}>Track progress</Text>
-            <Text style={S.title}>Goals</Text>
-          </View>
-          <Pressable onPress={openCreate} style={S.newBtn}>
-            <Ionicons name="add" size={18} color={Colors.bg1} />
-            <Text style={S.newBtnTxt}>New goal</Text>
-          </Pressable>
-        </Row>
-
-        {/* Summary stats — only meaningful once data loads */}
-        {!loading && (
-          <Row style={S.statsRow}>
-            <StatPill label="Active"    value={stats.active}    />
-            <StatPill label="Done"      value={stats.completed} accent />
-            {stats.overdue > 0 && (
-              <StatPill label="Overdue" value={stats.overdue}   danger />
-            )}
-          </Row>
-        )}
-
-        {/* Filter bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={S.filterRow}>
-          {(['active', 'completed', 'all'] as StatusFilter[]).map(f => (
-            <Pressable
-              key={f}
-              onPress={() => setStatusFilter(f)}
-              style={[S.filterChip, statusFilter === f && S.filterChipActive]}>
-              <Text style={[S.filterTxt, statusFilter === f && S.filterTxtActive]}>
-                {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <GoalsHeaderAnimated onNew={openCreate} loading={loading} stats={stats} statusFilter={statusFilter} setStatusFilter={setStatusFilter} />
       </View>
 
       {/* ── List ── */}
@@ -249,18 +214,20 @@ export default function GoalsScreen() {
             )}
           </View>
         ) : (
-          <View style={S.listGap}>
-            {sorted.map(goal => (
-              <GoalCard
-                key={goal._id}
-                goal={goal}
-                onEdit={() => openEdit(goal)}
-                onComplete={() => handleComplete(goal)}
-                onDelete={() => handleDelete(goal)}
-                onToggleMilestone={(mId) => toggleMilestone(goal._id, mId)}
-              />
-            ))}
-          </View>
+          <FadeView delay={50}>
+            <View style={S.listGap}>
+              {sorted.map(goal => (
+                <GoalCard
+                  key={goal._id}
+                  goal={goal}
+                  onEdit={() => openEdit(goal)}
+                  onComplete={() => handleComplete(goal)}
+                  onDelete={() => handleDelete(goal)}
+                  onToggleMilestone={(mId) => toggleMilestone(goal._id, mId)}
+                />
+              ))}
+            </View>
+          </FadeView>
         )}
       </ScrollView>
 
@@ -286,8 +253,9 @@ type GoalCardProps = {
 };
 
 function GoalCard({ goal, onEdit, onComplete, onDelete, onToggleMilestone }: GoalCardProps) {
-  const [expanded,   setExpanded]   = useState(false);
-  const [showActions,setShowActions]= useState(false);
+  const [expanded,    setExpanded]   = useState(false);
+  const [showActions, setShowActions]= useState(false);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.985);
 
   const dl       = deadlineLabel(goal.deadline);
   const pColor   = priorityColor(goal.priority);
@@ -298,10 +266,12 @@ function GoalCard({ goal, onEdit, onComplete, onDelete, onToggleMilestone }: Goa
     <Pressable
       onPress={() => { setExpanded(v => !v); setShowActions(false); }}
       onLongPress={() => setShowActions(v => !v)}
-      style={({ pressed }) => [
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}>
+      <Animated.View style={[
         gS.card,
         { borderLeftColor: isDone ? Colors.success : pColor },
-        pressed && gS.cardPressed,
+        { transform: [{ scale }] },
       ]}>
 
       {/* ── Main row ── */}
@@ -398,6 +368,7 @@ function GoalCard({ goal, onEdit, onComplete, onDelete, onToggleMilestone }: Goa
           </Row>
         </>
       )}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -490,6 +461,63 @@ const gS = StyleSheet.create({
   actionBtn:  { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', padding: 10 },
   actionLabel:{ ...Typography.uiSm, color: Colors.text2 },
 });
+
+// ─── Animated Goals Header ────────────────────────────────────────────────────
+
+type GoalsHeaderProps = {
+  onNew: () => void;
+  loading: boolean;
+  stats: { active: number; completed: number; overdue: number };
+  statusFilter: StatusFilter;
+  setStatusFilter: (f: StatusFilter) => void;
+};
+
+function GoalsHeaderAnimated({ onNew, loading, stats, statusFilter, setStatusFilter }: GoalsHeaderProps) {
+  const { opacity, translateY } = useFadeSlideIn(0, 6);
+  const { scale: btnScale, onPressIn: btnIn, onPressOut: btnOut } = usePressScale(0.95);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      <Row style={S.titleRow}>
+        <View>
+          <Text style={S.eyebrow}>Track progress</Text>
+          <Text style={S.title}>Goals</Text>
+        </View>
+        <Pressable onPressIn={btnIn} onPressOut={btnOut} onPress={onNew}>
+          <Animated.View style={[S.newBtn, { transform: [{ scale: btnScale }] }]}>
+            <Ionicons name="add" size={18} color={Colors.bg1} />
+            <Text style={S.newBtnTxt}>New goal</Text>
+          </Animated.View>
+        </Pressable>
+      </Row>
+
+      {!loading && (
+        <Row style={S.statsRow}>
+          <StatPill label="Active"    value={stats.active}    />
+          <StatPill label="Done"      value={stats.completed} accent />
+          {stats.overdue > 0 && (
+            <StatPill label="Overdue" value={stats.overdue}   danger />
+          )}
+        </Row>
+      )}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={S.filterRow}>
+        {(['active', 'completed', 'all'] as StatusFilter[]).map(f => (
+          <Pressable
+            key={f}
+            onPress={() => setStatusFilter(f)}
+            style={[S.filterChip, statusFilter === f && S.filterChipActive]}>
+            <Text style={[S.filterTxt, statusFilter === f && S.filterTxtActive]}>
+              {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </Animated.View>
+  );
+}
 
 // ─── Stat pill ────────────────────────────────────────────────────────────────
 

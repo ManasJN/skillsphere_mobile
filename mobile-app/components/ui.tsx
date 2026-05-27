@@ -10,6 +10,7 @@
 
 import { ReactNode, useState } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   Pressable,
   StyleSheet,
@@ -22,6 +23,7 @@ import {
 } from 'react-native';
 
 import { Colors, Control, Layout, Radius, Shadow, Spacing, Surface, Typography } from '@/lib/theme';
+import { useFadeIn } from '@/hooks/useAnimations';
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -237,6 +239,14 @@ export function EmptyState({ icon, emoji, title, body }: EmptyStateProps) {
       {body ? <Text style={S.emptyBody}>{body}</Text> : null}
     </View>
   );
+}
+
+// ─── FadeView — small animated wrapper used across screens ──────────────────
+export function FadeView({ children, style, delay = 0, duration }: {
+  children?: ReactNode; style?: StyleProp<ViewStyle>; delay?: number; duration?: number;
+}) {
+  const opacity = useFadeIn(delay, duration ?? undefined as any);
+  return <Animated.View style={[style, { opacity }]}>{children}</Animated.View>;
 }
 
 // ─── SectionHeader ────────────────────────────────────────────────────────────

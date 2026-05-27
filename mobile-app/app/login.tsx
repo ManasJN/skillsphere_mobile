@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,11 +16,9 @@ import {
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
 import { Colors, Layout, Radius, Spacing, Surface, Typography } from '@/lib/theme';
 import { Button, Card, ErrorBanner, Input } from '@/components/ui';
+import { useFadeSlideIn } from '@/hooks/useAnimations';
 
 export default function LoginScreen() {
-  // If a valid session exists, skip login and go straight to the app.
-  // The auth gate (app/index.tsx) handles this on cold open; this handles
-  // the case where the user navigates back to /login while authenticated.
   useEffect(() => {
     AsyncStorage.getItem(TOKEN_STORAGE_KEY).then(token => {
       if (token) router.replace('/(tabs)');
@@ -30,6 +29,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+
+  const brandAnim = useFadeSlideIn(0, 10);
+  const cardAnim  = useFadeSlideIn(80, 10);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -63,53 +65,55 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* Brand mark */}
-        <View style={S.brand}>
+        <Animated.View style={[S.brand, { opacity: brandAnim.opacity, transform: [{ translateY: brandAnim.translateY }] }]}>
           <View style={S.brandMark}>
             <Text style={S.brandLetter}>S</Text>
           </View>
           <Text style={S.brandName}>SkillSphere</Text>
           <Text style={S.brandSub}>Student productivity platform</Text>
-        </View>
+        </Animated.View>
 
         {/* Form card */}
-        <Card style={S.card}>
-          <Text style={S.cardTitle}>Welcome back</Text>
-          <Text style={S.cardSub}>Sign in to continue</Text>
+        <Animated.View style={{ opacity: cardAnim.opacity, transform: [{ translateY: cardAnim.translateY }] }}>
+          <Card style={S.card}>
+            <Text style={S.cardTitle}>Welcome back</Text>
+            <Text style={S.cardSub}>Sign in to continue</Text>
 
-          {error ? <ErrorBanner message={error} /> : null}
+            {error ? <ErrorBanner message={error} /> : null}
 
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@college.edu"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@college.edu"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-          <Input
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Your password"
-            secureTextEntry
-          />
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Your password"
+              secureTextEntry
+            />
 
-          <Button
-            label="Sign in"
-            onPress={handleLogin}
-            loading={loading}
-            full
-            style={{ marginTop: 4 }}
-          />
+            <Button
+              label="Sign in"
+              onPress={handleLogin}
+              loading={loading}
+              full
+              style={{ marginTop: 4 }}
+            />
 
-          <Pressable onPress={() => router.push('/register')} style={S.linkRow} hitSlop={8}>
-            <Text style={S.linkText}>
-              Don&apos;t have an account?{' '}
-              <Text style={S.linkAccent}>Register</Text>
-            </Text>
-          </Pressable>
-        </Card>
+            <Pressable onPress={() => router.push('/register')} style={S.linkRow} hitSlop={8}>
+              <Text style={S.linkText}>
+                Don&apos;t have an account?{' '}
+                <Text style={S.linkAccent}>Register</Text>
+              </Text>
+            </Pressable>
+          </Card>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
     </SafeAreaView>

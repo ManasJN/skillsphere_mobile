@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  RefreshControl, ScrollView,
+  Animated, RefreshControl, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authAPI, leaderboardAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Typography } from '@/lib/theme';
-import { Card, EmptyState, ErrorBanner, Row, Skeleton } from '@/components/ui';
+import { Card, EmptyState, ErrorBanner, FadeView, Row, Skeleton } from '@/components/ui';
+import { useFadeSlideIn, usePressScale } from '@/hooks/useAnimations';
 
 type Leader = {
   _id: string; name?: string; department?: string;
@@ -54,11 +55,7 @@ export default function LeaderboardScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* Header */}
-        <View style={S.header}>
-          <Text style={S.eyebrow}>This Week</Text>
-          <Text style={S.title}>Leaderboard</Text>
-          <Text style={S.sub}>Ranked by XP earned this week.</Text>
-        </View>
+        <AnimatedHeader />
 
         {loading ? (
           <LeaderboardSkeleton />
@@ -67,7 +64,7 @@ export default function LeaderboardScreen() {
         ) : leaders.length === 0 ? (
           <Card><EmptyState title="No rankings yet" body="Be the first to earn XP and claim the top spot!" /></Card>
         ) : (
-          <>
+          <FadeView delay={60}>
             {/* ── Podium ── */}
             {top3.length >= 3 && (
               <View style={S.topBlock}>
@@ -91,10 +88,21 @@ export default function LeaderboardScreen() {
                 ))}
               </View>
             )}
-          </>
+          </FadeView>
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function AnimatedHeader() {
+  const { opacity, translateY } = useFadeSlideIn(0, 8);
+  return (
+    <Animated.View style={[S.header, { opacity, transform: [{ translateY }] }]}>
+      <Text style={S.eyebrow}>This Week</Text>
+      <Text style={S.title}>Leaderboard</Text>
+      <Text style={S.sub}>Ranked by XP earned this week.</Text>
+    </Animated.View>
   );
 }
 
@@ -205,8 +213,13 @@ const pS = StyleSheet.create({
 });
 
 function LeaderRow({ leader, rank, isMe }: { leader: Leader; rank: number; isMe: boolean }) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.985);
   return (
-    <Row style={[rS.row, isMe && rS.rowMe]}>
+    <Animated.View
+      onTouchStart={onPressIn}
+      onTouchEnd={onPressOut}
+      style={[{ transform: [{ scale }] }]}>
+      <Row style={[rS.row, isMe && rS.rowMe]}>
       <Text style={[rS.rank, isMe && rS.rankMe]}>{rank}</Text>
       <View style={[rS.avatar, isMe && rS.avatarMe]}>
         <Text style={[rS.avatarTxt, isMe && rS.avatarTxtMe]}>{initials(leader.name)}</Text>
@@ -223,6 +236,7 @@ function LeaderRow({ leader, rank, isMe }: { leader: Leader; rank: number; isMe:
         <Text style={rS.xpLbl}>XP</Text>
       </View>
     </Row>
+    </Animated.View>
   );
 }
 const rS = StyleSheet.create({

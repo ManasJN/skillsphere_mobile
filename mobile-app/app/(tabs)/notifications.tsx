@@ -2,14 +2,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Pressable, RefreshControl, ScrollView,
+  Animated, Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { notificationsAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Typography } from '@/lib/theme';
-import { Badge, BadgeColor, Card, EmptyState, ErrorBanner, Row, Skeleton } from '@/components/ui';
+import { Badge, BadgeColor, Card, EmptyState, ErrorBanner, FadeView, Row, Skeleton } from '@/components/ui';
+import { useFadeSlideIn, usePressScale } from '@/hooks/useAnimations';
 
 type Notification = {
   _id: string; title: string; message: string;
@@ -83,33 +84,18 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
-        <Row style={S.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={S.backBtn}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text1} />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={S.eyebrow}>Activity</Text>
-            <Text style={S.title}>Notifications</Text>
-          </View>
-          {unread > 0 && (
-            <Pressable
-              disabled={marking}
-              onPress={markAllRead}
-              style={S.markAllBtn}
-              hitSlop={10}>
-              <Text style={S.markAllTxt}>{marking ? 'Clearing…' : 'Mark all read'}</Text>
-            </Pressable>
-          )}
-        </Row>
+        <NotifHeaderAnimated unread={unread} marking={marking} onMarkAll={markAllRead} onBack={() => router.back()} />
 
         {/* ── Unread banner ── */}
         {unread > 0 && !loading && (
-          <View style={S.unreadBanner}>
-            <View style={S.unreadDot} />
-            <Text style={S.unreadTxt}>
-              {unread} unread notification{unread !== 1 ? 's' : ''}
-            </Text>
-          </View>
+          <FadeView>
+            <View style={S.unreadBanner}>
+              <View style={S.unreadDot} />
+              <Text style={S.unreadTxt}>
+                {unread} unread notification{unread !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          </FadeView>
         )}
 
         {error ? <ErrorBanner message={error} /> : null}
@@ -117,21 +103,54 @@ export default function NotificationsScreen() {
         {loading ? (
           <NotifSkeleton />
         ) : items.length === 0 ? (
-          <Card>
-            <EmptyState title="All caught up" body="Goal updates, achievements, and announcements will appear here." />
-          </Card>
+          <FadeView>
+            <Card>
+              <EmptyState title="All caught up" body="Goal updates, achievements, and announcements will appear here." />
+            </Card>
+          </FadeView>
         ) : (
-          <>
+          <FadeView delay={60}>
             {todayItems.length > 0 && (
               <NotifGroup title="Today" items={todayItems} onMarkRead={markOne} />
             )}
             {earlierItems.length > 0 && (
               <NotifGroup title="Earlier" items={earlierItems} onMarkRead={markOne} />
             )}
-          </>
+          </FadeView>
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function NotifHeaderAnimated({ unread, marking, onMarkAll, onBack }: {
+  unread: number; marking: boolean; onMarkAll: () => void; onBack: () => void;
+}) {
+  const { opacity, translateY } = useFadeSlideIn(0, 6);
+  const { scale: backScale, onPressIn: backIn, onPressOut: backOut } = usePressScale(0.88);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      <Row style={S.header}>
+        <Pressable onPress={onBack} onPressIn={backIn} onPressOut={backOut} hitSlop={12}>
+          <Animated.View style={[S.backBtn, { transform: [{ scale: backScale }] }]}>
+            <Ionicons name="chevron-back" size={22} color={Colors.text1} />
+          </Animated.View>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={S.eyebrow}>Activity</Text>
+          <Text style={S.title}>Notifications</Text>
+        </View>
+        {unread > 0 && (
+          <Pressable
+            disabled={marking}
+            onPress={onMarkAll}
+            style={S.markAllBtn}
+            hitSlop={10}>
+            <Text style={S.markAllTxt}>{marking ? 'Clearing…' : 'Mark all read'}</Text>
+          </Pressable>
+        )}
+      </Row>
+    </Animated.View>
   );
 }
 
@@ -160,21 +179,25 @@ const G = StyleSheet.create({
 });
 
 function NotifRow({ notif, onMarkRead }: { notif: Notification; onMarkRead: (id: string) => void }) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.987);
   return (
     <Pressable
       onPress={() => { if (!notif.isRead) onMarkRead(notif._id); }}
-      style={({ pressed }) => [nS.row, !notif.isRead && nS.rowUnread, pressed && nS.rowPressed]}>
-      {!notif.isRead && <View style={nS.dot} />}
-      <View style={nS.body}>
-        <Row style={nS.top}>
-          <Text style={[nS.title, !notif.isRead && nS.titleUnread]} numberOfLines={1}>
-            {notif.title}
-          </Text>
-          <Text style={nS.time}>{relativeTime(notif.createdAt)}</Text>
-        </Row>
-        <Text style={nS.msg} numberOfLines={3}>{notif.message}</Text>
-        {notif.type && <Badge label={notif.type} color={typeColor(notif.type)} style={{ marginTop: 2 }} />}
-      </View>
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}>
+      <Animated.View style={[nS.row, !notif.isRead && nS.rowUnread, { transform: [{ scale }] }]}>
+        {!notif.isRead && <View style={nS.dot} />}
+        <View style={nS.body}>
+          <Row style={nS.top}>
+            <Text style={[nS.title, !notif.isRead && nS.titleUnread]} numberOfLines={1}>
+              {notif.title}
+            </Text>
+            <Text style={nS.time}>{relativeTime(notif.createdAt)}</Text>
+          </Row>
+          <Text style={nS.msg} numberOfLines={3}>{notif.message}</Text>
+          {notif.type && <Badge label={notif.type} color={typeColor(notif.type)} style={{ marginTop: 2 }} />}
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }
