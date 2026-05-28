@@ -19,6 +19,7 @@ import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser
 import { AchievementsRow } from '@/components/AchievementsRow';
 import { SkillSheet }           from '@/components/SkillSheet';
 import { CodingProfileSheet } from '@/components/CodingProfileSheet';
+import { GitHubCard }         from '@/components/GitHubCard';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
@@ -246,6 +247,20 @@ export default function ProfileScreen() {
                   </Pressable>
                 </View>
               )}
+            </SectionBlock>
+
+            {/* ── GitHub Identity ── */}
+            <SectionBlock>
+              <GitHubCard
+                userId={user?._id ?? ''}
+                savedUsername={user?.platformProfiles?.github}
+                onUsernameSaved={(uname) => {
+                  setUser(prev => prev ? {
+                    ...prev,
+                    platformProfiles: { ...(prev.platformProfiles ?? {}), github: uname },
+                  } : prev);
+                }}
+              />
             </SectionBlock>
 
             {/* ── Social Links ── */}

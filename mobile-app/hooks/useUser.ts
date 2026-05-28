@@ -9,7 +9,7 @@ export type User = {
   college?: string; collegeId?: { collegeName?: string }; section?: string;
   aspiration?: string; bio?: string; phone?: string;
   codingStats?: Record<string, number>; socialLinks?: Record<string, string>;
-  platformProfiles?: Record<string, string>;
+  platformProfiles?: Record<string, string> & { github?: string };
 };
 
 export function useUser() {
