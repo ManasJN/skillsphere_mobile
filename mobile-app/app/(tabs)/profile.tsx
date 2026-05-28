@@ -19,7 +19,11 @@ import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser
 import { AchievementsRow } from '@/components/AchievementsRow';
 import { SkillSheet }           from '@/components/SkillSheet';
 import { CodingProfileSheet } from '@/components/CodingProfileSheet';
-import { GitHubCard }         from '@/components/GitHubCard';
+import { GitHubCard }     from '@/components/GitHubCard';
+import { TimelineItem }  from '@/components/TimelineItem';
+import { TimelineSheet } from '@/components/TimelineSheet';
+import { useTimeline }   from '@/hooks/useTimeline';
+import { CATEGORY_CONFIG, type TimelineEntry, type TimelineEntryDraft } from '@/lib/timeline';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
@@ -54,6 +58,40 @@ export default function ProfileScreen() {
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [deletingSkillId,  setDeletingSkillId]  = useState<string | null>(null);
   const [codingSheet,      setCodingSheet]      = useState(false);
+  const [timelineSheet,    setTimelineSheet]    = useState(false);
+  const [editingEntry,     setEditingEntry]     = useState<TimelineEntry | null>(null);
+  const [tlCategoryFilter, setTlCategoryFilter] = useState<'all' | keyof typeof CATEGORY_CONFIG>('all');
+
+  const {
+    entries:    timelineEntries,
+    loading:    tlLoading,
+    create:     createEntry,
+    update:     updateEntry,
+    remove:     removeEntry,
+    stats:      tlStats,
+  } = useTimeline({ categoryFilter: tlCategoryFilter });
+
+  const openCreateEntry = () => { setEditingEntry(null); setTimelineSheet(true); };
+  const openEditEntry   = (e: TimelineEntry) => { setEditingEntry(e); setTimelineSheet(true); };
+
+  const handleSaveEntry = async (draft: TimelineEntryDraft) => {
+    if (editingEntry) {
+      await updateEntry(editingEntry.id, draft);
+    } else {
+      await createEntry(draft);
+    }
+  };
+
+  const handleDeleteEntry = (e: TimelineEntry) => {
+    Alert.alert(
+      'Delete entry',
+      `Delete "${e.title}" from your timeline?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => removeEntry(e.id) },
+      ]
+    );
+  };
 
   const load = useCallback(async () => {
     setError('');
@@ -263,6 +301,81 @@ export default function ProfileScreen() {
               />
             </SectionBlock>
 
+            {/* ── Achievement Timeline ── */}
+            <SectionBlock>
+              {/* Header row */}
+              <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <View>
+                  <Text style={S.sectionTitle}>Timeline</Text>
+                  {tlStats.total > 0 && (
+                    <Text style={S.sectionSub}>{tlStats.total} entr{tlStats.total === 1 ? 'y' : 'ies'}</Text>
+                  )}
+                </View>
+                <Pressable onPress={openCreateEntry} style={S.syncBtn}>
+                  <Ionicons name="add" size={14} color={Colors.accent} />
+                  <Text style={S.syncBtnTxt}>Add</Text>
+                </Pressable>
+              </Row>
+
+              {/* Category filter — only shown when entries exist */}
+              {tlStats.total > 0 && (
+                <View style={S.tlFilterRow}>
+                  {(['all', 'project', 'hackathon', 'certification', 'internship', 'workshop', 'achievement'] as const).map(key => {
+                    const active = tlCategoryFilter === key;
+                    const cfg    = key !== 'all' ? CATEGORY_CONFIG[key] : null;
+                    const count  = key === 'all' ? tlStats.total : tlStats.byCategory[key] ?? 0;
+                    if (key !== 'all' && count === 0) return null;
+                    return (
+                      <Pressable
+                        key={key}
+                        onPress={() => setTlCategoryFilter(key)}
+                        style={[
+                          S.tlFilterChip,
+                          active && { borderColor: cfg ? cfg.color + '60' : Colors.accent + '60', backgroundColor: cfg ? cfg.color + '14' : Colors.accentDim },
+                        ]}>
+                        <Text style={[
+                          S.tlFilterTxt,
+                          active && { color: cfg ? cfg.color : Colors.accent },
+                        ]}>
+                          {key === 'all' ? 'All' : cfg!.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Entries */}
+              {tlLoading ? (
+                <View style={{ gap: 16, paddingTop: 4 }}>
+                  {[1, 2, 3].map(i => <TimelineSkeleton key={i} isLast={i === 3} />)}
+                </View>
+              ) : timelineEntries.length === 0 ? (
+                <View style={S.tlEmpty}>
+                  <Text style={S.tlEmptyTitle}>No entries yet</Text>
+                  <Text style={S.tlEmptyBody}>
+                    Add projects, certifications, hackathons, and more to build your career journal.
+                  </Text>
+                  <Pressable onPress={openCreateEntry} style={S.tlEmptyBtn}>
+                    <Ionicons name="add" size={14} color={Colors.accent} />
+                    <Text style={S.tlEmptyBtnTxt}>Add first entry</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={{ paddingTop: 8 }}>
+                  {timelineEntries.map((entry, index) => (
+                    <TimelineItem
+                      key={entry.id}
+                      entry={entry}
+                      isLast={index === timelineEntries.length - 1}
+                      onEdit={openEditEntry}
+                      onDelete={handleDeleteEntry}
+                    />
+                  ))}
+                </View>
+              )}
+            </SectionBlock>
+
             {/* ── Social Links ── */}
             {user?.socialLinks && Object.values(user.socialLinks).some(Boolean) && (
               <SectionBlock>
@@ -385,12 +498,36 @@ export default function ProfileScreen() {
         onSave={handleSaveSkill}
         skill={editingSkill}
       />
+      <TimelineSheet
+        visible={timelineSheet}
+        onClose={() => setTimelineSheet(false)}
+        onSave={handleSaveEntry}
+        entry={editingEntry}
+      />
     </SafeAreaView>
   );
 }
 
 function SectionBlock({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[S.section, style]}>{children}</View>;
+}
+
+function TimelineSkeleton({ isLast }: { isLast: boolean }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 12 }}>
+      {/* Rail */}
+      <View style={{ width: 20, alignItems: 'center' }}>
+        <Skeleton width={20} height={20} radius={10} />
+        {!isLast && <View style={{ flex: 1, width: 1, backgroundColor: Colors.border1, marginTop: 4, minHeight: 40 }} />}
+      </View>
+      {/* Content */}
+      <View style={{ flex: 1, gap: 8, paddingBottom: isLast ? 0 : 20 }}>
+        <Skeleton height={14} width="65%" />
+        <Skeleton height={11} width="40%" />
+        <Skeleton height={18} width="28%" radius={4} />
+      </View>
+    </View>
+  );
 }
 
 function ProfileMetric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
@@ -539,6 +676,47 @@ const S = StyleSheet.create({
     marginTop: 4, paddingHorizontal: 20, paddingVertical: 10,
   },
   codingConnectTxt: { ...Typography.uiSm, color: Colors.bg1, fontWeight: '700' as const },
+
+  // Timeline
+  sectionSub: { ...Typography.bodyXs, color: Colors.text3, marginTop: 2 },
+  tlFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
+  },
+  tlFilterChip: {
+    borderColor: Colors.border1,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tlFilterTxt: {
+    ...Typography.bodyXs,
+    color: Colors.text3,
+    fontWeight: '500' as const,
+  },
+  tlEmpty: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 20,
+  },
+  tlEmptyTitle: { ...Typography.h4, color: Colors.text2 },
+  tlEmptyBody:  { ...Typography.bodySm, color: Colors.text3, textAlign: 'center' as const, lineHeight: 19, maxWidth: 260 },
+  tlEmptyBtn: {
+    alignItems: 'center',
+    borderColor: Colors.border1,
+    borderRadius: Radius.sm,
+    borderStyle: 'dashed' as const,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 5,
+    marginTop: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  tlEmptyBtnTxt: { ...Typography.uiSm, color: Colors.accent },
 
   addSkillBtn: {
     alignItems: 'center',
