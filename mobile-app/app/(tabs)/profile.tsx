@@ -22,7 +22,9 @@ import { CodingProfileSheet } from '@/components/CodingProfileSheet';
 import { GitHubCard }     from '@/components/GitHubCard';
 import { TimelineItem }  from '@/components/TimelineItem';
 import { TimelineSheet } from '@/components/TimelineSheet';
+import { VerificationRow } from '@/components/VerificationRow';
 import { useTimeline }   from '@/hooks/useTimeline';
+import { useVerification } from '@/hooks/useVerification';
 import { CATEGORY_CONFIG, type TimelineEntry, type TimelineEntryDraft } from '@/lib/timeline';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
@@ -155,6 +157,7 @@ export default function ProfileScreen() {
   const toNext   = xpToNextLevel(xp);
   const sHealth  = streakHealth(user?.streakDays ?? 0, (user as any)?.lastActiveAt);
   const cs       = user?.codingStats ?? {};
+  const { signals: verificationSignals } = useVerification(user);
 
   const TABS = [
     { key: 'skills'   as const, label: `Skills (${skills.length})` },
@@ -187,8 +190,8 @@ export default function ProfileScreen() {
                   <Text style={S.heroEmail}>{user?.email}</Text>
                   <Row style={{ gap: 6, marginTop: 6 }}>
                     <Badge label={user?.role ?? 'student'} color={user?.role === 'faculty' ? 'indigo' : 'teal'} />
-                    {user?.verificationStatus === 'verified' && <Badge label="✓ Verified" color="green" />}
                   </Row>
+                  <VerificationRow signals={verificationSignals} />
                 </View>
               </Row>
 
