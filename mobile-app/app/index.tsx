@@ -43,11 +43,13 @@ export default function AuthGate() {
         // clear the token and redirect — but we catch it here too for safety.
         await authAPI.me();
         if (!cancelled) setState('authenticated');
-      } catch {
-        // Token is expired or server unreachable — treat as unauthenticated.
-        // Don't clear the token here in case it's a network error; let the
-        // user try to log in and the server will reject the stale token then.
-        if (!cancelled) setState('unauthenticated');
+      } catch (err: any) {
+        if (!cancelled) {
+          if (err?.response?.status === 401) {
+            await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+          }
+          setState('unauthenticated');
+        }
       }
     }
 

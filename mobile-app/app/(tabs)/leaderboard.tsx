@@ -35,17 +35,32 @@ export default function LeaderboardScreen() {
         leaderboardAPI.get(),
         authAPI.me().catch(() => null),
       ]);
-      setLeaders((lbRes.data.data ?? lbRes.data ?? []).slice(0, 25));
+      if (__DEV__) {
+        console.log('[Leaderboard] response', lbRes.data);
+      }
+      const data = Array.isArray(lbRes.data?.data)
+        ? lbRes.data.data
+        : Array.isArray(lbRes.data)
+          ? lbRes.data
+          : lbRes.data?.data ?? [];
+      if (__DEV__ && !data.length) {
+        console.log('[Leaderboard] normalized data is empty', lbRes.data);
+      }
+      setLeaders(data.slice(0, 25));
       setCurrentId(meRes?.data?.user?._id ?? meRes?.data?.data?._id ?? '');
-    } catch { setError('Could not load leaderboard.'); }
-    finally { setLoading(false); setRefreshing(false); }
+    } catch {
+      setError('Could not load leaderboard.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
   const onRefresh = () => { setRefreshing(true); load(); };
 
   const top3 = leaders.slice(0, 3);
-  const rest  = leaders.slice(3);
+  const rest = leaders.slice(3);
 
   return (
     <SafeAreaView edges={['top']} style={S.safe}>
@@ -66,14 +81,20 @@ export default function LeaderboardScreen() {
         ) : (
           <FadeView delay={60}>
             {/* ── Podium ── */}
-            {top3.length >= 3 && (
+            {top3.length > 0 && (
               <View style={S.topBlock}>
                 <TopLeader leader={top3[0]} isMe={top3[0]._id === currentId} />
-                <View style={S.runnerRows}>
-                  <Runner leader={top3[1]} rank={2} isMe={top3[1]._id === currentId} />
-                  <View style={S.divider} />
-                  <Runner leader={top3[2]} rank={3} isMe={top3[2]._id === currentId} />
-                </View>
+                {top3.length > 1 && (
+                  <View style={S.runnerRows}>
+                    <Runner leader={top3[1]} rank={2} isMe={top3[1]._id === currentId} />
+                    {top3.length > 2 && (
+                      <>
+                        <View style={S.divider} />
+                        <Runner leader={top3[2]} rank={3} isMe={top3[2]._id === currentId} />
+                      </>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 

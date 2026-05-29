@@ -39,6 +39,9 @@ export default function LoginScreen() {
       return;
     }
     try {
+      if (__DEV__) {
+        console.log('[LoginScreen] login payload', { email: email.trim(), password });
+      }
       setLoading(true);
       setError('');
       const response = await authAPI.login(email.trim(), password);

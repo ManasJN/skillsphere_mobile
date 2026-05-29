@@ -10,8 +10,8 @@
 
 import { ReactNode, useState } from 'react';
 import {
-  Animated,
   ActivityIndicator,
+  Animated,
   Pressable,
   StyleSheet,
   Text,
@@ -22,8 +22,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { usePressScale, useSkeletonPulse } from '@/hooks/useAnimations';
+
 import { Colors, Control, Layout, Radius, Shadow, Spacing, Surface, Typography } from '@/lib/theme';
-import { useFadeIn } from '@/hooks/useAnimations';
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -74,11 +75,14 @@ export function Button({
   label, onPress, variant = 'primary', loading, disabled, style, small, full,
 }: ButtonProps) {
   const off = disabled || loading;
+  const { scale, onPressIn, onPressOut } = usePressScale(0.97);
   return (
     <Pressable
       disabled={off}
       onPress={onPress}
-      style={({ pressed }) => [
+      onPressIn={off ? undefined : onPressIn}
+      onPressOut={off ? undefined : onPressOut}>
+      <Animated.View style={[
         S.btn,
         small && S.btnSm,
         full && S.btnFull,
@@ -87,20 +91,21 @@ export function Button({
         variant === 'ghost'     && S.btnGhost,
         variant === 'danger'    && S.btnDanger,
         variant === 'tinted'    && S.btnTinted,
-        off     && S.btnOff,
-        pressed && !off && S.btnPressed,
+        off && S.btnOff,
         style,
+        { transform: [{ scale }] },
       ]}>
-      {loading
-        ? <ActivityIndicator color={variant === 'primary' ? Colors.bg1 : Colors.accent} size="small" />
-        : <Text style={[
-            S.btnTxt, small && S.btnTxtSm,
-            variant === 'primary'   && S.btnTxtPrimary,
-            variant === 'secondary' && S.btnTxtSecondary,
-            variant === 'ghost'     && S.btnTxtGhost,
-            variant === 'danger'    && S.btnTxtDanger,
-            variant === 'tinted'    && S.btnTxtTinted,
-          ]}>{label}</Text>}
+        {loading
+          ? <ActivityIndicator color={variant === 'primary' ? Colors.bg1 : Colors.accent} size="small" />
+          : <Text style={[
+              S.btnTxt, small && S.btnTxtSm,
+              variant === 'primary'   && S.btnTxtPrimary,
+              variant === 'secondary' && S.btnTxtSecondary,
+              variant === 'ghost'     && S.btnTxtGhost,
+              variant === 'danger'    && S.btnTxtDanger,
+              variant === 'tinted'    && S.btnTxtTinted,
+            ]}>{label}</Text>}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -229,24 +234,23 @@ type EmptyStateProps = {
   emoji?: string;
   title: string;
   body?: string;
+  /** Optional CTA label + handler */
+  action?: { label: string; onPress: () => void };
 };
-export function EmptyState({ icon, emoji, title, body }: EmptyStateProps) {
+export function EmptyState({ icon, emoji, title, body, action }: EmptyStateProps) {
   const sym = icon ?? emoji;
   return (
     <View style={S.empty}>
       {sym ? <Text style={S.emptyIcon}>{sym}</Text> : null}
       <Text style={S.emptyTitle}>{title}</Text>
       {body ? <Text style={S.emptyBody}>{body}</Text> : null}
+      {action ? (
+        <Pressable onPress={action.onPress} style={S.emptyAction}>
+          <Text style={S.emptyActionTxt}>{action.label}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
-}
-
-// ─── FadeView — small animated wrapper used across screens ──────────────────
-export function FadeView({ children, style, delay = 0, duration }: {
-  children?: ReactNode; style?: StyleProp<ViewStyle>; delay?: number; duration?: number;
-}) {
-  const opacity = useFadeIn(delay, duration ?? undefined as any);
-  return <Animated.View style={[style, { opacity }]}>{children}</Animated.View>;
 }
 
 // ─── SectionHeader ────────────────────────────────────────────────────────────
@@ -320,24 +324,28 @@ type GoalItemProps = {
 };
 export function GoalItem({ title, progress, priority, deadline, done, onPress }: GoalItemProps) {
   const pColor = priorityAccent(priority);
+  const { scale, onPressIn, onPressOut } = usePressScale(0.98);
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [S.goalItem, pressed && onPress && S.goalItemPressed]}>
-      {/* Left priority stripe */}
-      <View style={[S.goalStripe, { backgroundColor: pColor }]} />
-      <View style={S.goalBody}>
-        <View style={S.goalTop}>
-          <Text style={[S.goalTitle, done && S.goalTitleDone]} numberOfLines={1}>{title}</Text>
-          {deadline ? <Text style={S.goalDate}>{deadline}</Text> : null}
-        </View>
-        {!done && (
-          <View style={S.goalProgRow}>
-            <ProgressBar pct={progress} color={pColor} height={3} style={{ flex: 1 }} />
-            <Text style={[S.goalPct, { color: pColor }]}>{progress}%</Text>
+      onPressIn={onPress ? onPressIn : undefined}
+      onPressOut={onPress ? onPressOut : undefined}>
+      <Animated.View style={[S.goalItem, { transform: [{ scale }] }]}>
+        {/* Left priority stripe */}
+        <View style={[S.goalStripe, { backgroundColor: pColor }]} />
+        <View style={S.goalBody}>
+          <View style={S.goalTop}>
+            <Text style={[S.goalTitle, done && S.goalTitleDone]} numberOfLines={1}>{title}</Text>
+            {deadline ? <Text style={S.goalDate}>{deadline}</Text> : null}
           </View>
-        )}
-      </View>
+          {!done && (
+            <View style={S.goalProgRow}>
+              <ProgressBar pct={progress} color={pColor} height={3} style={{ flex: 1 }} />
+              <Text style={[S.goalPct, { color: pColor }]}>{progress}%</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -369,7 +377,12 @@ type SkeletonProps = {
 export function Skeleton({
   width = '100%', height = 14, radius = Radius.sm, style,
 }: SkeletonProps) {
-  return <View style={[S.skeleton, { width: width as number, height, borderRadius: radius }, style]} />;
+  const opacity = useSkeletonPulse();
+  return (
+    <Animated.View
+      style={[S.skeleton, { width: width as number, height, borderRadius: radius, opacity }, style]}
+    />
+  );
 }
 
 export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
@@ -379,6 +392,24 @@ export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
       <Skeleton height={10} width="90%" />
       <Skeleton height={10} width="70%" />
     </View>
+  );
+}
+
+// ─── FadeView — simple fade-in wrapper ────────────────────────────────────────
+
+/**
+ * Wraps children in a fade-in Animated.View.
+ * Use for sections/cards that appear after data loads.
+ */
+import { useFadeIn } from '@/hooks/useAnimations';
+export function FadeView({
+  children, delay = 0, style,
+}: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
+  const opacity = useFadeIn(delay);
+  return (
+    <Animated.View style={[{ opacity }, style]}>
+      {children}
+    </Animated.View>
   );
 }
 
@@ -497,6 +528,16 @@ const S = StyleSheet.create({
   emptyIcon:  { fontSize: 28, marginBottom: 2 },
   emptyTitle: { ...Typography.h4, color: Colors.text2, textAlign: 'center' },
   emptyBody:  { ...Typography.bodySm, color: Colors.text3, maxWidth: 260, textAlign: 'center', lineHeight: 19 },
+  emptyAction: {
+    borderColor:      Colors.border1,
+    borderRadius:     Radius.sm,
+    borderStyle:      'dashed' as const,
+    borderWidth:      1,
+    marginTop:        4,
+    paddingHorizontal: 16,
+    paddingVertical:   8,
+  },
+  emptyActionTxt: { ...Typography.uiSm, color: Colors.accent },
 
   // SectionHeader
   secHead:       { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },

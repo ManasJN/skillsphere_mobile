@@ -57,6 +57,7 @@ export default function ProfileScreen() {
   const [loading,  setLoading]  = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error,    setError]    = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
   const [tab,          setTab]         = useState<'skills' | 'projects'>('skills');
   const [achievements, setAchievements] = useState<any[]>([]);
   const [achLoading,   setAchLoading]   = useState(false);
@@ -162,9 +163,17 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    try { await authAPI.logout(); } catch { /* ignore */ }
-    await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-    router.replace('/'); // Auth gate will redirect to /login
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await authAPI.logout();
+    } catch {
+      /* ignore */
+    } finally {
+      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+      router.replace('/'); // Auth gate will redirect to /login
+      setLoggingOut(false);
+    }
   };
 
   const xp       = user?.xpPoints ?? 0;
@@ -192,7 +201,7 @@ export default function ProfileScreen() {
           <Text style={S.screenTitle}>Profile</Text>
           <Row style={{ gap: 8, alignItems: 'center' }}>
             <SharePortfolioBtn onPress={handleSharePortfolio} disabled={!user} />
-            <Pressable onPress={handleLogout} hitSlop={12} style={S.signOutBtn}>
+            <Pressable onPress={handleLogout} disabled={loggingOut} hitSlop={12} style={S.signOutBtn}>
               <Text style={S.signOutTxt}>Sign out</Text>
             </Pressable>
           </Row>
@@ -230,9 +239,15 @@ export default function ProfileScreen() {
 
             {/* ── Quick Stats ── */}
             <View style={S.metricStrip}>
-              <StatChip label="CGPA"   value={String(user?.cgpa ?? '–')} />
+              <ProfileMetric label="CGPA" value={String(user?.cgpa ?? '–')} />
+              <View style={S.metricSep} />
               <ProfileMetric label="Skills" value={String(skills.length)} />
-              <StatChip label="Streak" value={`${user?.streakDays ?? 0}d`} accent={sHealth === 'safe' && (user?.streakDays ?? 0) > 1} />
+              <View style={S.metricSep} />
+              <ProfileMetric
+                label="Streak"
+                value={`${user?.streakDays ?? 0}d`}
+                accent={sHealth === 'safe' && (user?.streakDays ?? 0) > 1}
+              />
             </View>
 
             {/* ── Achievements ── */}
@@ -260,7 +275,10 @@ export default function ProfileScreen() {
                   </Row>
                 ))}
               {!user?.department && !user?.rollNumber && (
-                <EmptyState title="No academic info" body="Ask your admin to update your profile details." />
+                <View style={S.tabEmptyState}>
+                  <Text style={S.tabEmptyTitle}>Academic details not filled in</Text>
+                  <Text style={S.tabEmptyBody}>Your department, roll number, and batch will appear here once your admin updates your record.</Text>
+                </View>
               )}
             </SectionBlock>
 
@@ -374,9 +392,9 @@ export default function ProfileScreen() {
                 </View>
               ) : timelineEntries.length === 0 ? (
                 <View style={S.tlEmpty}>
-                  <Text style={S.tlEmptyTitle}>No entries yet</Text>
+                  <Text style={S.tlEmptyTitle}>Your career journal is empty</Text>
                   <Text style={S.tlEmptyBody}>
-                    Add projects, certifications, hackathons, and more to build your career journal.
+                    Document projects, internships, certifications, and hackathons. Every entry strengthens your portfolio.
                   </Text>
                   <Pressable onPress={openCreateEntry} style={S.tlEmptyBtn}>
                     <Ionicons name="add" size={14} color={Colors.accent} />
@@ -436,7 +454,18 @@ export default function ProfileScreen() {
               {tab === 'skills' && (
                 <View style={{ gap: 10 }}>
                   {skills.length === 0
-                    ? <EmptyState title="No skills yet" body="Track what you know and what you're learning." />
+                    ? (
+                      <View style={S.tabEmptyState}>
+                        <Text style={S.tabEmptyTitle}>No skills tracked yet</Text>
+                        <Text style={S.tabEmptyBody}>
+                          Add what you know and what you're learning — skills appear on your portfolio and improve your opportunity matches.
+                        </Text>
+                        <Pressable onPress={openAddSkill} style={S.tabEmptyAction}>
+                          <Ionicons name="add" size={13} color={Colors.accent} />
+                          <Text style={S.tabEmptyActionTxt}>Add your first skill</Text>
+                        </Pressable>
+                      </View>
+                    )
                     : skills.map((sk, i) => (
                         <View key={sk._id ?? i} style={S.skillRow}>
                           <View style={[S.skillDot, { backgroundColor: skillColor(sk.category) }]} />
@@ -460,11 +489,13 @@ export default function ProfileScreen() {
                         </View>
                       ))
                   }
-                  {/* Add skill button — always visible at bottom of list */}
-                  <Pressable onPress={openAddSkill} style={S.addSkillBtn}>
-                    <Ionicons name="add" size={16} color={Colors.accent} />
-                    <Text style={S.addSkillTxt}>Add skill</Text>
-                  </Pressable>
+                  {/* Add skill button — shown below list when skills exist */}
+                  {skills.length > 0 && (
+                    <Pressable onPress={openAddSkill} style={S.addSkillBtn}>
+                      <Ionicons name="add" size={16} color={Colors.accent} />
+                      <Text style={S.addSkillTxt}>Add skill</Text>
+                    </Pressable>
+                  )}
                 </View>
               )}
 
@@ -473,7 +504,14 @@ export default function ProfileScreen() {
               {/* Projects */}
               {tab === 'projects' && (
                 projects.length === 0
-                  ? <EmptyState title="No projects yet" body="Add projects to showcase your work and earn XP." />
+                  ? (
+                    <View style={S.tabEmptyState}>
+                      <Text style={S.tabEmptyTitle}>No projects added yet</Text>
+                      <Text style={S.tabEmptyBody}>
+                        Projects are the strongest signal on your portfolio. Add what you've built — personal, academic, or open source.
+                      </Text>
+                    </View>
+                  )
                   : <View style={{ gap: 10 }}>
                       {projects.map((p, i) => (
                         <View key={i} style={S.projRow}>
@@ -483,7 +521,7 @@ export default function ProfileScreen() {
                           </Row>
                           {p.description && <Text style={S.projDesc} numberOfLines={2}>{p.description}</Text>}
                           {(p.techStack?.length ?? 0) > 0 && (
-                            <Row style={{ flexWrap: 'wrap', gap: 6 }}>
+                            <Row style={{ flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
                               {p.techStack!.slice(0, 5).map(t => (
                                 <View key={t} style={S.tag}><Text style={S.tagTxt}>{t}</Text></View>
                               ))}
@@ -496,7 +534,7 @@ export default function ProfileScreen() {
             </SectionBlock>
 
             {/* ── Sign out ── */}
-            <Pressable onPress={handleLogout} style={S.logoutCard}>
+            <Pressable onPress={handleLogout} disabled={loggingOut} style={S.logoutCard}>
               <Text style={S.logoutTxt}>Sign out of SkillSphere</Text>
             </Pressable>
           </>
@@ -649,12 +687,18 @@ const S = StyleSheet.create({
     borderTopColor: Colors.border0,
     borderTopWidth: 1,
     flexDirection: 'row',
-    paddingVertical: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
   },
-  profileMetric: { flex: 1, gap: 2 },
+  metricSep: {
+    width: 1,
+    height: 28,
+    backgroundColor: Colors.border1,
+  },
+  profileMetric: { flex: 1, gap: 3, alignItems: 'center' },
   profileMetricValue: { ...Typography.statSm, color: Colors.text0 },
   profileMetricAccent: { color: Colors.accentLight },
-  profileMetricLabel: { ...Typography.bodyXs, color: Colors.text3 },
+  profileMetricLabel: { ...Typography.label, color: Colors.text4, fontSize: 10 },
   statsRow: { gap: 10 },
 
   section: {
@@ -785,6 +829,39 @@ const S = StyleSheet.create({
     paddingVertical: 10,
   },
   addSkillTxt: { ...Typography.uiSm, color: Colors.accent },
+
+  // Consistent empty state within tab panels
+  tabEmptyState: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 24,
+    paddingHorizontal: 8,
+  },
+  tabEmptyTitle: {
+    ...Typography.h4,
+    color: Colors.text2,
+    textAlign: 'center' as const,
+  },
+  tabEmptyBody: {
+    ...Typography.bodySm,
+    color: Colors.text3,
+    textAlign: 'center' as const,
+    lineHeight: 19,
+    maxWidth: 280,
+  },
+  tabEmptyAction: {
+    alignItems: 'center',
+    borderColor: Colors.border1,
+    borderRadius: Radius.sm,
+    borderStyle: 'dashed' as const,
+    borderWidth: 1,
+    flexDirection: 'row' as const,
+    gap: 5,
+    marginTop: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  tabEmptyActionTxt: { ...Typography.uiSm, color: Colors.accent },
 
   logoutCard: {
     alignItems: 'center', backgroundColor: Colors.status.dangerBg, borderColor: Colors.status.dangerBorder,

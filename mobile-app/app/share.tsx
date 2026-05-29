@@ -294,23 +294,26 @@ function QRZoomModal({
   const insets = useSafeAreaInsets();
   return (
     <Modal
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
       transparent
       visible={visible}>
       <Pressable style={S.modalOverlay} onPress={onClose}>
-        <View style={[S.modalCard, { paddingBottom: insets.bottom + 20 }]}>
-          {/* Close */}
-          <Row style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View style={[S.modalCard, { paddingBottom: insets.bottom + 24 }]}>
+          {/* Handle */}
+          <View style={S.modalHandle} />
+
+          {/* Header */}
+          <View style={S.modalHeaderRow}>
             <Text style={S.modalTitle}>{name}</Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable onPress={onClose} hitSlop={16}>
               <Ionicons name="close" size={20} color={Colors.text3} />
             </Pressable>
-          </Row>
+          </View>
 
           <QRCode
             value={url}
-            size={272}
+            size={264}
             darkColor={Colors.text0}
             quietZone={4}
             style={S.modalQR}
@@ -328,61 +331,63 @@ function QRZoomModal({
 
 const S = StyleSheet.create({
   safe:    { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 24, paddingHorizontal: Spacing.lg, paddingTop: 20 },
+  // More generous top spacing, structured gap between sections
+  content: { gap: 20, paddingHorizontal: Spacing.lg, paddingTop: 22 },
 
   errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   errorTxt:  { ...Typography.h4, color: Colors.text3 },
 
-  // Top bar
+  // Top bar — consistent with portfolio.tsx
   topBar: {
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
-  backBtn:    { padding: 2 },
+  backBtn:    { padding: 4, marginLeft: -4 },
   topBarTitle:{ ...Typography.h4, color: Colors.text0 },
-  topBarSub:  { ...Typography.bodyXs, color: Colors.text4, marginTop: 1 },
+  topBarSub:  { ...Typography.bodyXs, color: Colors.text4, marginTop: 2 },
 
-  // Identity
+  // Identity card — slightly more padding, consistent border radius
   identityRow: {
     flexDirection: 'row',
     alignItems:    'center',
     gap:           14,
     backgroundColor: Colors.bg2,
     borderColor:     Colors.border1,
-    borderRadius:    Radius.lg,
+    borderRadius:    Radius.xl,
     borderWidth:     1,
-    padding:         14,
+    padding:         16,
   },
   initialsCircle: {
-    width:           48,
-    height:          48,
+    width:           44,
+    height:          44,
     borderRadius:    Radius.full,
-    backgroundColor: Colors.bg4,
-    borderColor:     Colors.border2,
+    backgroundColor: Colors.accentSoft,
+    borderColor:     Colors.accentMid,
     borderWidth:     1,
     alignItems:      'center',
     justifyContent:  'center',
   },
   initialsText: {
-    ...Typography.h3,
-    color:       Colors.text0,
+    ...Typography.h4,
+    color:         Colors.accentLight,
     letterSpacing: 1,
+    fontWeight:    '700',
   },
   identityName: { ...Typography.h4, color: Colors.text0 },
-  identityRole: { ...Typography.bodyXs, color: Colors.text3 },
+  identityRole: { ...Typography.bodyXs, color: Colors.text3, marginTop: 2 },
 
-  // QR section
+  // QR section — centred, comfortable padding
   qrSection: {
     alignItems: 'center',
-    gap:        12,
+    gap:        14,
   },
   qrLabel: {
     ...Typography.label,
-    color:        Colors.text4,
-    letterSpacing: 1,
-    alignSelf:    'flex-start',
+    color:         Colors.text4,
+    letterSpacing: 0.8,
+    alignSelf:     'flex-start',
   },
   qrWrap: {
     alignItems:      'center',
@@ -390,80 +395,88 @@ const S = StyleSheet.create({
     borderColor:     Colors.border1,
     borderRadius:    Radius.xl,
     borderWidth:     1,
-    gap:             8,
-    padding:         16,
+    gap:             12,
+    paddingHorizontal: 20,
+    paddingTop:      20,
+    paddingBottom:   16,
     width:           '100%',
   },
   qrHint: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           4,
+    gap:           5,
   },
   qrHintTxt: { ...Typography.bodyXs, color: Colors.text4 },
 
+  // URL pill — full width, monospace URL for readability
   urlPill: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             6,
-    backgroundColor: Colors.bg3,
-    borderColor:     Colors.border1,
-    borderRadius:    Radius.full,
-    borderWidth:     1,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               7,
+    backgroundColor:   Colors.bg3,
+    borderColor:       Colors.border1,
+    borderRadius:      Radius.sm,
+    borderWidth:       1,
     paddingHorizontal: 12,
-    paddingVertical:    8,
-    width:           '100%',
+    paddingVertical:   9,
+    width:             '100%',
   },
   urlTxt: {
     ...Typography.bodyXs,
-    color: Colors.text3,
-    flex:  1,
+    color:      Colors.text3,
+    flex:       1,
+    fontFamily: undefined, // system monospace-ish
   },
 
-  // Actions
+  // Actions section
   actionsSection: { gap: 8 },
   actionsLabel: {
     ...Typography.label,
     color:         Colors.text4,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   actionsList: {
     backgroundColor: Colors.bg2,
     borderColor:     Colors.border1,
-    borderRadius:    Radius.lg,
+    borderRadius:    Radius.xl,
     borderWidth:     1,
     overflow:        'hidden',
   },
-  actionDivider: { marginLeft: 52 },
+  // Indent divider to align with text, not icon
+  actionDivider: { marginLeft: 58 },
   actionRow: {
-    alignItems:   'center',
-    flexDirection: 'row',
-    gap:           12,
-    paddingHorizontal: 14,
-    paddingVertical:   13,
+    alignItems:        'center',
+    flexDirection:     'row',
+    gap:               12,
+    paddingHorizontal: 16,
+    paddingVertical:   14,
   },
   actionIconWrap: {
-    width:           32,
-    height:          32,
-    borderRadius:    Radius.sm,
+    width:           34,
+    height:          34,
+    borderRadius:    Radius.md,
     backgroundColor: Colors.bg3,
+    borderColor:     Colors.border1,
+    borderWidth:     1,
     alignItems:      'center',
     justifyContent:  'center',
   },
-  actionLabel: { ...Typography.bodySm, color: Colors.text0, fontWeight: '500' },
-  actionDesc:  { ...Typography.bodyXs, color: Colors.text3 },
+  actionLabel: { ...Typography.bodySm, color: Colors.text0, fontWeight: '600' },
+  actionDesc:  { ...Typography.bodyXs, color: Colors.text3, marginTop: 1 },
 
-  // Info note
+  // Note — subtle, bottom of screen
   note: {
-    flexDirection: 'row',
-    alignItems:    'flex-start',
-    gap:           6,
-    paddingBottom: 8,
+    flexDirection:  'row',
+    alignItems:     'flex-start',
+    gap:            7,
+    paddingVertical: 4,
+    opacity:        0.7,
   },
   noteTxt: {
     ...Typography.bodyXs,
     color:      Colors.text4,
     flex:       1,
-    lineHeight: 17,
+    lineHeight: 18,
   },
 
   // QR zoom modal
@@ -474,30 +487,45 @@ const S = StyleSheet.create({
     justifyContent:  'flex-end',
   },
   modalCard: {
-    backgroundColor: Colors.bg2,
+    backgroundColor:      Colors.bg2,
     borderTopLeftRadius:  Radius.xxl,
     borderTopRightRadius: Radius.xxl,
-    borderColor:     Colors.border1,
-    borderWidth:     1,
-    padding:         24,
-    width:           '100%',
-    alignItems:      'center',
+    borderColor:          Colors.border1,
+    borderWidth:          1,
+    paddingHorizontal:    24,
+    paddingTop:           20,
+    width:                '100%',
+    alignItems:           'center',
+    gap:                  12,
   },
-  modalTitle: { ...Typography.h4, color: Colors.text0, flex: 1 },
+  modalHandle: {
+    width:           36,
+    height:          4,
+    borderRadius:    Radius.full,
+    backgroundColor: Colors.border2,
+    marginBottom:    4,
+  },
+  modalHeaderRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  modalTitle: { ...Typography.h4, color: Colors.text0 },
   modalQR: {
     borderRadius: Radius.lg,
     overflow:     'hidden',
-    marginBottom: 16,
   },
   modalUrl: {
     ...Typography.bodyXs,
     color:     Colors.text3,
     textAlign: 'center',
-    marginBottom: 6,
   },
   modalHint: {
     ...Typography.bodyXs,
     color:     Colors.text4,
     textAlign: 'center',
+    marginBottom: 4,
   },
 });

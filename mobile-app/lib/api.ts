@@ -31,22 +31,38 @@ api.interceptors.request.use(
   },
 );
 
+let meCache: Promise<any> | null = null;
+const clearMeCache = () => { meCache = null; };
+
 // Auto-logout on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const url = error?.config?.url ?? '';
+    const status = error?.response?.status;
+    const isLoginOrRegister = url.includes('/auth/login') || url.includes('/auth/register');
+    const isLogoutRequest = url.includes('/auth/logout');
+
     if (__DEV__) {
-      console.error('[API] response interceptor error', {
-        message: error?.message,
-        url: error?.config?.url,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
+      const shouldLog = status !== 401 || (!isLoginOrRegister && !isLogoutRequest);
+      if (shouldLog) {
+        console.error('[API] response interceptor error', {
+          message: error?.message,
+          url,
+          status,
+          data: error?.response?.data,
+        });
+      }
     }
-    if (error.response?.status === 401) {
-      await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY]);
-      router.replace('/'); // Route through auth gate for clean state reset
+
+    if (status === 401) {
+      clearMeCache();
+      if (!isLoginOrRegister && !isLogoutRequest) {
+        await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY]);
+        router.replace('/'); // Route through auth gate for clean state reset
+      }
     }
+
     return Promise.reject(error);
   },
 );
@@ -54,15 +70,33 @@ api.interceptors.response.use(
 // ─── API modules ─────────────────────────────────────────────────────────────
 
 export const authAPI = {
-  me: () => api.get('/auth/me'),
-  login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
-  // Backend expects "name", not "fullName"
-  register: (name: string, email: string, password: string, role: string) =>
-    api.post('/auth/register', { name, email, password, role }),
+  me: async () => {
+    if (meCache) return meCache;
+    meCache = api.get('/auth/me').catch((err) => { clearMeCache(); throw err; });
+    return meCache;
+  },
+  login: (email: string, password: string) => {
+    if (__DEV__) {
+      console.log('[authAPI] login payload', { email, password });
+    }
+    clearMeCache();
+    return api.post('/auth/login', { email, password });
+  },
+  // Frontend uses "faculty" UI label for college accounts.
+  register: (name: string, email: string, password: string, role: string) => {
+    const serverRole = role === 'faculty' ? 'college' : role;
+    if (__DEV__) {
+      console.log('[authAPI] register payload', { name, email, password, role: serverRole });
+    }
+    clearMeCache();
+    return api.post('/auth/register', { name, email, password, role: serverRole });
+  },
   verifyOtp: (email: string, otp: string) =>
     api.post('/auth/verify-otp', { email, otp }),
-  logout: () => api.post('/auth/logout'),
+  logout: () => {
+    clearMeCache();
+    return api.post('/auth/logout');
+  },
 };
 
 export const skillsAPI = {

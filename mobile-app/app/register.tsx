@@ -36,6 +36,14 @@ export default function RegisterScreen() {
     setError('');
     setIsLoading(true);
     try {
+      if (__DEV__) {
+        console.log('[RegisterScreen] register payload', {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role,
+        });
+      }
       await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
       router.push({ pathname: '/otp-verification', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
@@ -115,7 +123,7 @@ export default function RegisterScreen() {
               editable={!isLoading}
               label="Password"
               onChangeText={setPassword}
-              placeholder="Min 6 characters"
+              placeholder="Min 8 characters"
               rightElement={
                 <Pressable hitSlop={12} onPress={() => setShowPassword(p => !p)}>
                   <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
@@ -151,7 +159,7 @@ export default function RegisterScreen() {
 function validateForm(name: string, email: string, password: string) {
   if (name.trim().length < 2) return 'Please enter your full name.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address.';
-  if (password.length < 6) return 'Password must be at least 6 characters.';
+  if (password.length < 8) return 'Password must be at least 8 characters.';
   return '';
 }
 

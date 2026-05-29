@@ -202,7 +202,7 @@ export default function PortfolioScreen() {
                       {!isLast && <View style={S.tlLine} />}
                     </View>
                     {/* Content */}
-                    <View style={[S.tlContent, !isLast && { paddingBottom: 16 }]}>
+                    <View style={[S.tlContent, { paddingBottom: isLast ? 0 : 18 }]}>
                       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <Text style={S.tlTitle} numberOfLines={1}>{entry.title}</Text>
                         <Text style={S.tlDate}>{formatTimelineDate(entry.date, entry.endDate)}</Text>
@@ -310,7 +310,8 @@ export default function PortfolioScreen() {
 
         {/* Footer */}
         <View style={S.footer}>
-          <Text style={S.footerTxt}>Built with SkillSphere</Text>
+          <Text style={S.footerMark}>SKILLSPHERE</Text>
+          <Text style={S.footerTxt}>Student identity platform</Text>
         </View>
 
       </ScrollView>
@@ -323,11 +324,10 @@ export default function PortfolioScreen() {
 function PortfolioSection({
   title, children, delay = 0,
 }: { title: string; children: React.ReactNode; delay?: number }) {
-  const { opacity, translateY } = useFadeSlideIn(delay, 6);
+  const { opacity, translateY } = useFadeSlideIn(delay, 5);
   return (
     <Animated.View style={[S.section, { opacity, transform: [{ translateY }] }]}>
-      <Text style={S.sectionTitle}>{title}</Text>
-      <Divider style={{ marginBottom: 12 }} />
+      <Text style={S.sectionTitle}>{title.toUpperCase()}</Text>
       {children}
     </Animated.View>
   );
@@ -347,7 +347,8 @@ function projBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
 
 const S = StyleSheet.create({
   safe:    { backgroundColor: Colors.bg1, flex: 1 },
-  content: { gap: 0, paddingBottom: 40, paddingHorizontal: 18, paddingTop: 18 },
+  // Consistent 20px horizontal padding, 24px top breathing room, structured gap
+  content: { paddingBottom: 56, paddingHorizontal: 20, paddingTop: 24 },
 
   // Error state
   errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
@@ -355,72 +356,82 @@ const S = StyleSheet.create({
   backLink:  { padding: 8 },
   backLinkTxt: { ...Typography.bodySm, color: Colors.accent },
 
-  // Top bar
+  // Top bar — taller, more generous hit targets
   topBar: {
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   backBtn: {
-    padding: 2,
+    // Slightly larger tap zone
+    padding: 4,
+    marginLeft: -4,
   },
   topBarTitle: { ...Typography.h4, color: Colors.text0 },
-  topBarSub:   { ...Typography.bodyXs, color: Colors.text4, marginTop: 1 },
+  topBarSub:   { ...Typography.bodyXs, color: Colors.text4, marginTop: 2 },
   shareBtn: {
     alignItems: 'center',
     backgroundColor: Colors.accentDim,
     borderColor: Colors.accentMid,
-    borderRadius: Radius.xs,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  shareBtnTxt: { ...Typography.bodyXs, color: Colors.accent, fontWeight: '600' },
+  shareBtnTxt: { ...Typography.uiSm, color: Colors.accent, fontWeight: '600' },
 
-  // Hero
+  // Hero — more vertical breathing room, aligned baseline rhythm
   hero: {
-    gap: 12,
-    paddingBottom: 20,
+    gap: 14,
+    paddingBottom: 24,
+    paddingTop: 4,
   },
-  heroTop:     { gap: 14, alignItems: 'flex-start' },
-  heroMeta:    { flex: 1, gap: 3 },
+  heroTop:     { gap: 16, alignItems: 'flex-start' },
+  heroMeta:    { flex: 1, gap: 4 },
   heroName:    { ...Typography.h2, color: Colors.text0 },
-  heroHeadline:{ ...Typography.bodySm, color: Colors.text2 },
-  heroBio:     { ...Typography.bodySm, color: Colors.text3, lineHeight: 19, marginTop: 4 },
+  heroHeadline:{ ...Typography.bodySm, color: Colors.text2, marginTop: 1 },
+  heroBio:     { ...Typography.bodySm, color: Colors.text3, lineHeight: 20, marginTop: 6 },
 
-  verifyStrip: { flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  verifyStrip: { flexWrap: 'wrap', gap: 6, marginTop: 6 },
 
+  // URL as a subtle row — not a button, just a reference
   urlRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
+    gap: 6,
+    marginTop: 4,
+    opacity: 0.7,
   },
   urlTxt: {
     ...Typography.bodyXs,
-    color: Colors.text4,
+    color: Colors.text3,
     flex: 1,
   },
 
-  // Section
+  // Section — consistent 24px top gap, 12px divider margin, 18px bottom padding
   section: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border0,
-    paddingTop: 18,
-    paddingBottom: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border1,
+    paddingTop: 24,
+    paddingBottom: 10,
     gap: 0,
   },
-  sectionTitle: { ...Typography.h3, color: Colors.text0, marginBottom: 8 },
+  sectionTitle: {
+    ...Typography.label,
+    color: Colors.text3,
+    marginBottom: 14,
+    letterSpacing: 0.6,
+  },
 
-  // Skills
-  skillsGrid: { gap: 10 },
-  skillRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  skillDot: { width: 8, height: 8, borderRadius: 4 },
+  // Skills — consistent gap, slightly taller rows for readability
+  skillsGrid: { gap: 13 },
+  skillRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  skillDot: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
   skillName: { ...Typography.bodySm, color: Colors.text1, flex: 1 },
-  skillPct:  { ...Typography.mono, fontWeight: '700' },
+  skillPct:  { ...Typography.mono, color: Colors.text2, fontWeight: '700' },
 
   // Timeline
   tlRow: { flexDirection: 'row', gap: 12 },
@@ -433,16 +444,16 @@ const S = StyleSheet.create({
     flex: 1, width: 1, backgroundColor: Colors.border1,
     marginTop: 4, minHeight: 16,
   },
-  tlContent: { flex: 1, gap: 4 },
+  tlContent: { flex: 1, gap: 4, paddingBottom: 4 },
   tlTitle:   { ...Typography.h4, color: Colors.text0, flex: 1 },
-  tlDate:    { ...Typography.bodyXs, color: Colors.text3, flexShrink: 0 },
+  tlDate:    { ...Typography.bodyXs, color: Colors.text3, flexShrink: 0, marginTop: 2 },
   tlOrg:     { ...Typography.bodyXs, color: Colors.text3, fontStyle: 'italic' },
   tlChip: {
     alignSelf: 'flex-start', borderRadius: Radius.xs, borderWidth: 1,
     paddingHorizontal: 7, paddingVertical: 2,
   },
   tlChipTxt: { ...Typography.bodyXs, fontWeight: '500' },
-  tlDesc:    { ...Typography.bodyXs, color: Colors.text2, lineHeight: 17 },
+  tlDesc:    { ...Typography.bodyXs, color: Colors.text2, lineHeight: 18 },
   tlTags:    { flexWrap: 'wrap', gap: 5 },
   tlTag: {
     backgroundColor: Colors.bg3, borderColor: Colors.border1,
@@ -451,37 +462,44 @@ const S = StyleSheet.create({
   },
   tlTagTxt: { ...Typography.bodyXs, color: Colors.text2 },
 
-  // Projects
+  // Projects — slightly more spacious cards
   projCard: {
-    backgroundColor: Colors.bg3, borderColor: Colors.border0,
-    borderRadius: Radius.md, borderWidth: 1, gap: 6, padding: 12,
+    backgroundColor: Colors.bg2, borderColor: Colors.border1,
+    borderRadius: Radius.lg, borderWidth: 1, gap: 8, padding: 14,
+    marginBottom: 8,
   },
   projTitle: { ...Typography.h4, color: Colors.text0, flex: 1 },
-  projDesc:  { ...Typography.bodySm, color: Colors.text2, lineHeight: 18 },
+  projDesc:  { ...Typography.bodySm, color: Colors.text2, lineHeight: 19 },
 
-  // Coding
+  // Coding — consistent cell layout, wider min-width
   codingCell: {
-    alignItems: 'center', backgroundColor: Colors.bg3, borderColor: Colors.border1,
-    borderRadius: Radius.sm, borderWidth: 1, gap: 3, padding: 10,
-    minWidth: '22%',
+    alignItems: 'center', backgroundColor: Colors.bg2, borderColor: Colors.border1,
+    borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12,
+    minWidth: '30%', flex: 1,
   },
-  codingVal: { ...Typography.h4, color: Colors.text0 },
-  codingLbl: { ...Typography.bodyXs, color: Colors.text3, fontSize: 10 },
+  codingVal: { ...Typography.h3, color: Colors.text0 },
+  codingLbl: { ...Typography.bodyXs, color: Colors.text3, fontSize: 11 },
 
-  // Tags
+  // Tags — pill shape consistent with app-wide tags
   tag: {
-    backgroundColor: Colors.bg4, borderColor: Colors.border1,
+    backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.full, borderWidth: 1,
-    paddingHorizontal: 8, paddingVertical: 2,
+    paddingHorizontal: 9, paddingVertical: 3,
   },
-  tagTxt: { ...Typography.bodyXs, color: Colors.text3, fontWeight: '600' },
+  tagTxt: { ...Typography.bodyXs, color: Colors.text3, fontWeight: '500' },
 
-  // Links
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
-  linkPlatform: { ...Typography.bodySm, color: Colors.text2, fontWeight: '600', minWidth: 70 },
+  // Links — more generous row height, platform label left-aligned
+  linkRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border0,
+  },
+  linkPlatform: { ...Typography.uiSm, color: Colors.text1, minWidth: 80 },
   linkUrl: { ...Typography.bodySm, color: Colors.text3, flex: 1 },
 
-  // Footer
-  footer: { alignItems: 'center', paddingTop: 28, paddingBottom: 12 },
-  footerTxt: { ...Typography.bodyXs, color: Colors.text4 },
+  // Footer — more breathing room
+  footer: { alignItems: 'center', paddingTop: 40, paddingBottom: 8, gap: 4 },
+  footerMark: { ...Typography.label, color: Colors.text4, letterSpacing: 0.8 },
+  footerTxt:  { ...Typography.bodyXs, color: Colors.border2 },
 });
