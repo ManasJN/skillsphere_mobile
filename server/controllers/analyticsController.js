@@ -14,7 +14,13 @@ const getLeaderboard = async (req, res, next) => {
   try {
     const { type = 'xp', dept, limit = 20 } = req.query;
 
-    const match = { role: 'student', isActive: true };
+    const match = {
+      role: 'student',
+      $or: [
+        { isActive: true },
+        { isActive: { $exists: false } },
+      ],
+    };
     if (dept && dept !== 'ALL') match.department = dept;
 
     let sortField = '-xpPoints';
@@ -28,6 +34,10 @@ const getLeaderboard = async (req, res, next) => {
       .sort(sortField)
       .limit(Number(limit))
       .lean();
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Leaderboard] query match', match, 'sort', sortField, 'returned', users.length);
+    }
 
     // Add rank and coding score
     const data = users.map((u, i) => ({
@@ -55,9 +65,16 @@ const getDeptSummary = async (req, res, next) => {
   try {
     const depts = ['CSE', 'MECH', 'CIVIL', 'INSTRUMENTATION', 'ELECTRICAL', 'ELECTRONICS', 'CHEMICAL', 'OTHER'];
     const summary = await Promise.all(depts.map(async dept => {
-      const students = await User.find({ role: 'student', department: dept, isActive: true })
-        .select('cgpa xpPoints codingStats');
-      if (!students.length) return null;
+      const students = await User.find({
+      role: 'student',
+      department: dept,
+      $or: [
+        { isActive: true },
+        { isActive: { $exists: false } },
+      ],
+    })
+      .select('cgpa xpPoints codingStats');
+    if (!students.length) return null;
 
       const avgCgpa   = (students.reduce((s, u) => s + (u.cgpa || 0), 0) / students.length).toFixed(2);
       const avgXP     = Math.round(students.reduce((s, u) => s + (u.xpPoints || 0), 0) / students.length);
