@@ -1,193 +1,146 @@
-﻿# SkillSphere
+# SkillSphere — Minimal Developer Identity & Portfolio
 
-SkillSphere is a mobile-first student productivity ecosystem built with Expo/React Native and a Node.js/Express backend. The current app centers on goal tracking, productivity insights, achievement progress, campus opportunities, and a streamlined onboarding/auth experience.
+[License: MIT](LICENSE)
 
-## Current status
+A minimalist developer/student identity and portfolio platform focused on professional identity, GitHub integration, achievement progression, verification, and shareable portfolios (including QR-based profile sharing).
 
-- Active `mobile-app` Expo client with modern navigation and mobile-first UX
-- Backend API in `server` using Express and MongoDB
-- Role-aware registration for students and faculty
-- Verified college access to announcements, events, and opportunities
-- Goal management with milestones, XP rewards, and progress insights
-- Explore feed combining reminders, campus updates, and opportunities
+**Quick facts**
+- Mobile app: Expo + React Native (TypeScript)
+- Backend: Node.js, Express, MongoDB
+- Intent: small, reliable, portfolio-first experience for developers and students
 
-## Key features
+---
 
-- Password login + email OTP verification flow
-- Persistent JWT auth with auto-refresh handling
-- Personalized dashboard with XP, streak health, and goal context
-- Goal creation, editing, completion, and milestone tracking
-- Achievement summaries and productivity signals
-- Explore tab with academic reminders, college announcements, and filtered opportunities
-- Notifications and profile management
-- Clean Expo Router tab navigation with safe-area and mobile-first design
+**Project introduction**
 
-## Goals and productivity
+SkillSphere provides a compact, mobile-first way to present a developer identity: verified accomplishments, GitHub-connected activity, an ordered professional timeline, and a shareable portfolio view that can be delivered via link or QR code.
 
-SkillSphere puts student goals at the center of the experience:
+**Product vision**
 
-- Active goals are surfaced first on the home dashboard
-- Goals support priority, deadlines, progress, and status filters
-- Milestones can be toggled within each goal
-- XP rewards are attached to goal completion
-- Productivity insights highlight overdue tasks, streak risk, and progress milestones
-- Analytics surface completion rate, average skill level, and project momentum
+Deliver a dependable, low-friction portfolio for individuals who want a clean, developer-focused presence. The app prioritizes clarity, verifiable signals, and an exportable/shareable portfolio while keeping the UI intentionally minimal.
 
-## Onboarding and auth flow
+---
 
-The current onboarding flow is focused on a simple, secure mobile experience:
+**Core features**
 
-- New users register with name, email, password, and role selection
-- Registration sends an OTP email for verification
-- OTP verification completes onboarding and signs in the user
-- Auth state is persisted in `AsyncStorage`
-- The app routes authenticated users directly into the dashboard
+- GitHub integration for importing public activity and basic profile data.
+- Professional timeline: chronological display of projects, achievements and milestones.
+- Verification system for vetted credentials and campus access flows.
+- Portfolio preview and share mode for public-facing presentation.
+- QR-based profile sharing for in-person quick exchange.
+- Lightweight, handcrafted UI components focused on readability and clarity.
 
-## Achievements and insights
+---
 
-The app now includes a refined student progress surface:
+**Screens / feature overview**
 
-- Achievement cards appear when earned
-- A contextual insight bar surfaces actionable signals
-- XP progress and level advancement are visible on the dashboard
-- A setup checklist helps new users onboard faster
-- Verified students unlock richer campus updates and opportunity feeds
+- Onboarding & verification: simple email + OTP flow, role selection.
+- Dashboard: XP/achievement summary and active goals.
+- Goals & milestones: progress tracking and lightweight XP rewards.
+- Timeline / Portfolio: professional timeline and portfolio preview mode.
+- Share: generate a shareable portfolio link and QR for quick sharing.
+- Explore & opportunities: curated listings and college-specific announcements (for verified users).
 
-## Explore, opportunities, and reminders
+---
 
-The Explore tab combines multiple campus workflows into one feed:
+**Tech stack**
 
-- Static academic reminders for upcoming coursework and exams
-- Live college announcements and event updates for verified students
-- Opportunity search and filter for internships, hackathons, jobs, research, and scholarships
-- Apply actions for opportunity listings
-- Daily urgency labels and deadline-based reminders
-
-## Tech stack
-
-- Mobile: Expo, Expo Router, React Native, TypeScript
+- Mobile: Expo, React Native, Expo Router, TypeScript
 - Backend: Node.js, Express, MongoDB, Mongoose
-- Networking: Axios with centralized auth interceptor
-- Storage: `AsyncStorage` for JWT persistence
-- UI: custom component library plus Expo vector icons
+- Networking: Axios (centralized client + auth interceptor)
+- Storage: AsyncStorage (mobile) and JWT-based auth
+- Dev tooling: ESLint, TypeScript
 
-## Architecture overview
+---
 
-- `server/` contains the API, middleware, controllers, and Mongoose models
-- `mobile-app/` contains the active Expo app with file-based routing under `app/`
-- `mobile-app/lib/` centralizes API access and environment configuration
-- `mobile-app/hooks/` contains goal and productivity business logic
-- `mobile-app/components/` contains reusable UI primitives and feature-specific components
+**Architecture highlights**
 
-## Folder structure
+- `server/` — Express API, controllers, middleware, and Mongoose models.
+- `mobile-app/` — Expo application using file-based routing under `app/`.
+- `mobile-app/lib/` — API client, configuration, and small utilities (QR helper, theme, etc.).
+- `mobile-app/components/` — focused, reusable UI primitives; portfolio and share screens live here.
 
-- `server/`
-  - `controllers/` — request handlers
-  - `models/` — Mongoose schemas
-  - `routes/` — Express route definitions
-  - `middleware/` — auth and validation
-  - `utils/` — JWT, email, seed scripts
-- `mobile-app/`
-  - `app/` — Expo Router screens and tab layout
-  - `components/` — UI components, goal sheet, achievement row
-  - `hooks/` — goal and productivity hooks
-  - `lib/` — API client and config
-  - `assets/` — images and screenshot placeholders
+This structure keeps the mobile client lightweight and keeps business logic in hooks (`mobile-app/hooks/`).
 
-## Setup
+---
 
-### Prerequisites
+**Setup & installation**
 
-- Node.js 18+ and npm
-- MongoDB instance (local or Atlas)
-- Expo CLI is optional; use `npx expo` with Expo SDK 54
+Prerequisites:
+- Node.js 18+ and npm or Yarn
+- A MongoDB instance (local or Atlas)
+- Recommended: Expo Go on your device or a simulator
 
-### Backend setup
-
+Backend
 ```bash
 cd server
 npm install
 cp .env.example .env
-```
-
-Edit `server/.env` and configure:
-
-- `MONGO_URI`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `EMAIL_USER`
-- `EMAIL_PASS`
-
-Start the backend:
-
-```bash
+# Edit server/.env to set MONGO_URI, JWT secrets, and email credentials
 npm run dev
 ```
 
-### Mobile app setup
-
+Mobile app
 ```bash
 cd mobile-app
 npm install
 cp .env.example .env
+# Edit mobile-app/.env: set EXPO_PUBLIC_API_URL to the API base URL (including /api)
+npx expo start
 ```
 
-Edit `mobile-app/.env` and set:
+Network note: when running the mobile client on a device, point `EXPO_PUBLIC_API_URL` to your machine on the local network (e.g. `http://192.168.1.42:5000/api`).
 
-```env
-EXPO_PUBLIC_API_URL=http://<YOUR_LAN_IP>:5000/api
-```
+---
 
-Start the app:
+**Environment configuration**
 
-```bash
-npx expo start --clear
-```
+Key variables (examples)
 
-Open the app in Expo Go or an emulator.
+- `server/.env`
+  - `PORT` — server port (default 5000)
+  - `MONGO_URI` — MongoDB connection string
+  - `JWT_SECRET`, `JWT_REFRESH_SECRET` — authentication secrets
+  - `EMAIL_USER`, `EMAIL_PASS` — SMTP sender credentials (OTP/email)
 
-## Environment variables
+- `mobile-app/.env`
+  - `EXPO_PUBLIC_API_URL` — backend API URL used by the mobile client
 
-### `server/.env`
+The codebase includes fallback defaults in `mobile-app/lib/config.ts` to simplify local development.
 
-- `PORT` — server port (default `5000`)
-- `MONGO_URI` — MongoDB connection string
-- `JWT_SECRET` — access token secret
-- `JWT_EXPIRES_IN` — access token expiry
-- `JWT_REFRESH_SECRET` — refresh token secret
-- `JWT_REFRESH_EXPIRES_IN` — refresh token expiry
-- `CLIENT_URL` — client origin (used by email links and CORS)
-- `EMAIL_USER` — SMTP sender address
-- `EMAIL_PASS` — SMTP password
+---
 
-### `mobile-app/.env`
+**Screenshots (placeholders)**
 
-- `EXPO_PUBLIC_API_URL` — backend API base URL, including `/api`
+Add high-quality screenshots to `mobile-app/assets/screenshots/` and replace the placeholders below:
 
-> `mobile-app/lib/config.ts` falls back to `http://localhost:5000/api` during development if the env var is not set.
+- `mobile-app/assets/screenshots/dashboard.png` — dashboard and achievements
+- `mobile-app/assets/screenshots/timeline.png` — portfolio/timeline preview
+- `mobile-app/assets/screenshots/share-qr.png` — share screen with QR
 
-## Screenshots
+Recommended image sizes: 1080×2340 (vertical) and 1200×630 (wide preview).
 
-Place app screenshots under `mobile-app/assets/screenshots/` and update the references below:
+---
 
-- `mobile-app/assets/screenshots/dashboard.png`
-- `mobile-app/assets/screenshots/goals.png`
-- `mobile-app/assets/screenshots/explore.png`
+**Roadmap (short, realistic items)**
 
-## Future roadmap
+- Improve offline resilience and caching for timeline and portfolio.
+- Add background sync for GitHub imports and verification status.
+- Small UX polish: export PDF of portfolio, print-friendly versions.
+- Optional: native sharing extensions for deeper OS integration.
 
-- Push notifications for reminders and opportunity updates
-- Live event and announcement sync for verified campuses
-- Historical goal analytics and calendar views
-- Improved offline support for the mobile client
+---
 
-## Contribution
+**Contribution**
 
-1. Fork the repository and create a feature branch.
-2. Install dependencies for `server` and `mobile-app`.
-3. Verify the backend and mobile client run locally.
-4. Open a pull request with a clear summary and screenshots for UI changes.
+1. Fork the repo and create a feature branch.
+2. Run both `server` and `mobile-app` locally and reproduce the issue or feature.
+3. Open a PR with a clear description and screenshots for UI changes.
 
-## License
+Please keep changes focused and testable — the codebase is intentionally small and opinionated.
 
-MIT License.
+---
+
+**License**
+
+This project is open source under the MIT License.

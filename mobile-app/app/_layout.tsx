@@ -46,6 +46,10 @@ export default function RootLayout() {
 
           {/* Main app */}
           <Stack.Screen name="(tabs)"          options={{ animation: 'none' }} />
+
+          {/* Portfolio system */}
+          <Stack.Screen name="portfolio"       options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="share"           options={{ animation: 'slide_from_bottom' }} />
         </Stack>
         <StatusBar style="light" backgroundColor={Colors.bg1} />
       </ThemeProvider>

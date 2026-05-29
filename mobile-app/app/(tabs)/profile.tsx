@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Animated,
   Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, View,
   type StyleProp,
@@ -25,7 +26,10 @@ import { TimelineSheet } from '@/components/TimelineSheet';
 import { VerificationRow } from '@/components/VerificationRow';
 import { useTimeline }   from '@/hooks/useTimeline';
 import { useVerification } from '@/hooks/useVerification';
+import { usePressScale } from '@/hooks/useAnimations';
 import { CATEGORY_CONFIG, type TimelineEntry, type TimelineEntryDraft } from '@/lib/timeline';
+import { assemblePortfolioData } from '@/lib/portfolio';
+import { deriveVerifications } from '@/lib/verification';
 import { streakHealth, xpToNextLevel } from '@/hooks/useProductivity';
 
 type Skill   = { _id?: string; name?: string; category?: string; level?: number };
@@ -66,6 +70,7 @@ export default function ProfileScreen() {
 
   const {
     entries:    timelineEntries,
+    allEntries: allTimelineEntries,
     loading:    tlLoading,
     create:     createEntry,
     update:     updateEntry,
@@ -94,6 +99,17 @@ export default function ProfileScreen() {
       ]
     );
   };
+
+  const handleSharePortfolio = useCallback(() => {
+    if (!user) return;
+    const sigs = deriveVerifications(user);
+    const data = assemblePortfolioData(user, skills, projects, allTimelineEntries, sigs);
+    const json = JSON.stringify(data);
+    const b64  = typeof btoa !== 'undefined'
+      ? btoa(json)
+      : Buffer.from(json).toString('base64');
+    router.push(`/share?data=${b64}`);
+  }, [user, skills, projects, allTimelineEntries]);
 
   const load = useCallback(async () => {
     setError('');
@@ -174,9 +190,12 @@ export default function ProfileScreen() {
         {/* ── Header row ── */}
         <Row style={S.headerRow}>
           <Text style={S.screenTitle}>Profile</Text>
-          <Pressable onPress={handleLogout} hitSlop={12} style={S.signOutBtn}>
-            <Text style={S.signOutTxt}>Sign out</Text>
-          </Pressable>
+          <Row style={{ gap: 8, alignItems: 'center' }}>
+            <SharePortfolioBtn onPress={handleSharePortfolio} disabled={!user} />
+            <Pressable onPress={handleLogout} hitSlop={12} style={S.signOutBtn}>
+              <Text style={S.signOutTxt}>Sign out</Text>
+            </Pressable>
+          </Row>
         </Row>
 
         {loading ? <ProfileSkeleton /> : error ? <ErrorBanner message={error} /> : (
@@ -511,6 +530,27 @@ export default function ProfileScreen() {
   );
 }
 
+function SharePortfolioBtn({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+  const { scale, onPressIn, onPressOut } = usePressScale(0.94);
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={disabled ? undefined : onPressIn}
+      onPressOut={disabled ? undefined : onPressOut}
+      disabled={disabled}
+      hitSlop={8}>
+      <Animated.View style={[
+        S.sharePortfolioBtn,
+        disabled && { opacity: 0.4 },
+        { transform: [{ scale }] },
+      ]}>
+        <Ionicons name="share-outline" size={13} color={Colors.accent} />
+        <Text style={S.sharePortfolioBtnTxt}>Share</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 function SectionBlock({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[S.section, style]}>{children}</View>;
 }
@@ -572,6 +612,18 @@ const S = StyleSheet.create({
   screenTitle: { ...Typography.h2, color: Colors.text0 },
   signOutBtn: { paddingHorizontal: 2, paddingVertical: 4 },
   signOutTxt: { ...Typography.uiSm, color: Colors.text3 },
+  sharePortfolioBtn: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             5,
+    borderColor:     Colors.accentMid,
+    borderRadius:    Radius.xs,
+    borderWidth:     1,
+    backgroundColor: Colors.accentDim,
+    paddingHorizontal: 10,
+    paddingVertical:    6,
+  },
+  sharePortfolioBtnTxt: { ...Typography.uiSm, color: Colors.accent, fontWeight: '600' as const },
 
   // Hero card
   heroCard: {
