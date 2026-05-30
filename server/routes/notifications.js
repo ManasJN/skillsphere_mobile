@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middleware/auth');
 router.use(protect);
 router.get ('/',               N.getNotifications);
 router.put ('/mark-all-read',  N.markAllRead);
-router.post('/broadcast',      authorize('college','admin'), N.broadcast);
+router.post('/broadcast',      authorize('faculty','admin'), N.broadcast);
 router.put ('/:id/read',       N.markRead);
 router.delete('/:id',          N.deleteNotification);
 

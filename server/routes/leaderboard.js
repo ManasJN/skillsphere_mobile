@@ -5,6 +5,6 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 router.get('/',                   getLeaderboard);
-router.get('/department-summary', authorize('college','admin'), getDeptSummary);
+router.get('/department-summary', authorize('faculty','admin'), getDeptSummary);
 
 module.exports = router;

@@ -39,12 +39,20 @@ const protect = async (req, res, next) => {
 };
 
 /**
+ * Normalize role names for legacy and standardized values.
+ */
+const FACULTY_ROLES = ['faculty', 'college'];
+const normalizeRole = (role) => FACULTY_ROLES.includes(role) ? 'faculty' : role;
+
+/**
  * Authorize: restrict to specific roles
- * Usage: authorize('admin', 'college')
+ * Usage: authorize('admin', 'faculty')
  */
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const normalizedUserRole = normalizeRole(req.user.role);
+    const allowed = roles.some((allowedRole) => normalizeRole(allowedRole) === normalizedUserRole);
+    if (!allowed) {
       return res.status(403).json({
         success: false,
         message: `Role '${req.user.role}' is not authorized for this action`,
@@ -55,14 +63,14 @@ const authorize = (...roles) => {
 };
 
 /**
- * Owner or Admin: only the resource owner OR admin/college can access
+ * Owner or Admin: only the resource owner OR admin/faculty can access
  * Usage: ownerOrAdmin('userId')  — where 'userId' is the param name in the route
  */
 const ownerOrAdmin = (paramName = 'id') => {
   return (req, res, next) => {
     const resourceOwnerId = req.params[paramName];
     const isOwner = req.user._id.toString() === resourceOwnerId;
-    const isAdmin = ['admin', 'college'].includes(req.user.role);
+    const isAdmin = ['admin', ...FACULTY_ROLES].includes(req.user.role);
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Access denied – not the resource owner' });

@@ -8,6 +8,7 @@ A minimalist developer/student identity and portfolio platform focused on profes
 - Mobile app: Expo + React Native (TypeScript)
 - Backend: Node.js, Express, MongoDB
 - Intent: small, reliable, portfolio-first experience for developers and students
+- Role support: `student`, `faculty`, and `admin`; faculty users route to a dedicated faculty tab navigator
 
 ---
 

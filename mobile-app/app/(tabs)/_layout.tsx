@@ -18,11 +18,13 @@
  */
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs }  from 'expo-router';
+import { Redirect, Tabs }  from 'expo-router';
 import type { ComponentProps } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { authAPI } from '@/lib/api';
 import { Colors, Control, Shadow, Spacing, Typography } from '@/lib/theme';
 import { useTabFocus } from '@/hooks/useAnimations';
 
@@ -46,6 +48,22 @@ const TAB_ICON_SIZE = Control.tabIcon;
 const TAB_ICON_BOX = Control.tabIconBox;
 
 export default function TabLayout() {
+  // FIX: Role guard — if a faculty user somehow reaches (tabs), redirect them
+  // back to faculty tabs. This is a safety net for Expo Router stack replays.
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    authAPI.me()
+      .then((res) => {
+        const user = res.data?.data ?? res.data;
+        setRole(user?.role ?? 'student');
+      })
+      .catch(() => setRole('student')); // On error, don't block student flow
+  }, []);
+
+  if (role !== null && ['faculty', 'college'].includes(role.toLowerCase().trim())) {
+    return <Redirect href="/(faculty-tabs)/dashboard" />;
+  }
+
   const insets     = useSafeAreaInsets();
   // Safe inset floor: 0 on devices with hardware buttons (insets.bottom === 0),
   // actual value on gesture-nav devices (typically 34pt iOS, 16-48dp Android).

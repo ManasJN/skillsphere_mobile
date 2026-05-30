@@ -64,6 +64,7 @@ app.use('/api/analytics',     require('./routes/analytics'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/colleges',      require('./routes/colleges'));
+app.use('/api/faculty',       require('./routes/faculty'));    // Phase 1 — faculty/college dashboard
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

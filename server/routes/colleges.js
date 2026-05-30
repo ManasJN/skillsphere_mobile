@@ -58,7 +58,7 @@ router.get('/', async (req, res, next) => {
 
 router.use(protect);
 
-router.get('/me', authorize('college'), async (req, res, next) => {
+router.get('/me', authorize('faculty'), async (req, res, next) => {
   try {
     const college = await getCollegeForUser(req.user);
     res.json({ success: true, data: college });
@@ -69,7 +69,7 @@ router.get('/me', authorize('college'), async (req, res, next) => {
 
 router.put(
   '/me/documents',
-  authorize('college'),
+  authorize('faculty'),
   upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'documents', maxCount: 5 }]),
   async (req, res, next) => {
     try {
@@ -176,7 +176,7 @@ router.get('/student-verification/my', authorize('student'), async (req, res, ne
   }
 });
 
-router.get('/student-requests', authorize('college'), async (req, res, next) => {
+router.get('/student-requests', authorize('faculty'), async (req, res, next) => {
   try {
     const college = await getCollegeForUser(req.user);
     if (!college || college.verificationStatus !== 'approved') {
@@ -191,7 +191,7 @@ router.get('/student-requests', authorize('college'), async (req, res, next) => 
   }
 });
 
-router.put('/student-requests/:id/decision', authorize('college'), async (req, res, next) => {
+router.put('/student-requests/:id/decision', authorize('faculty'), async (req, res, next) => {
   try {
     const { decision, note = '' } = req.body;
     if (!['approved', 'rejected'].includes(decision)) {
@@ -235,7 +235,7 @@ router.put('/student-requests/:id/decision', authorize('college'), async (req, r
   }
 });
 
-router.post('/announcements', authorize('college'), async (req, res, next) => {
+router.post('/announcements', authorize('faculty'), async (req, res, next) => {
   try {
     const college = await getCollegeForUser(req.user);
     if (!college || college.verificationStatus !== 'approved') {
@@ -274,7 +274,7 @@ router.post('/announcements', authorize('college'), async (req, res, next) => {
   }
 });
 
-router.post('/events', authorize('college'), async (req, res, next) => {
+router.post('/events', authorize('faculty'), async (req, res, next) => {
   try {
     const college = await getCollegeForUser(req.user);
     if (!college || college.verificationStatus !== 'approved') {

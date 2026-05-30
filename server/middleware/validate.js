@@ -20,7 +20,7 @@ const registerRules = [
   body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 100 }),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('role').optional().isIn(['student', 'college']).withMessage('Invalid role'),
+  body('role').optional().isIn(['student', 'faculty', 'college']).withMessage('Invalid role'),
   body('department').optional().isIn(['CSE', 'MECH', 'CIVIL', 'INSTRUMENTATION', 'ELECTRICAL', 'ELECTRONICS', 'CHEMICAL', 'OTHER']),
   body('rollNumber').optional().trim(),
 ];

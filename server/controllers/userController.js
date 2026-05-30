@@ -96,7 +96,7 @@ const getAllUsers = async (req, res, next) => {
     const { dept, role, aspiration, semester, search, page = 1, limit = 20, sort = '-xpPoints' } = req.query;
 
     const query = { isActive: true };
-    if (req.user.role === 'college') query.collegeId = req.user.collegeId;
+    if (['faculty', 'college'].includes(req.user.role)) query.collegeId = req.user.collegeId;
     if (dept)        query.department  = dept;
     if (role)        query.role        = role;
     if (aspiration)  query.aspiration  = aspiration;

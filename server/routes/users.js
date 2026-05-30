@@ -47,8 +47,8 @@ const showcaseUpload = createUpload(showcaseDir);
 // All routes require login
 router.use(protect);
 
-router.get ('/',                       authorize('college', 'admin'), getAllUsers);
-router.get ('/search/skills',          authorize('college', 'admin'), searchBySkill);
+router.get ('/',                       authorize('faculty', 'admin'), getAllUsers);
+router.get ('/search/skills',          authorize('faculty', 'admin'), searchBySkill);
 router.put ('/:id/import/leetcode',    ownerOrAdmin('id'), importLeetCodeStats);
 router.put ('/:id/import/github',      ownerOrAdmin('id'), importGitHubStats);
 router.post('/:id/certifications',     ownerOrAdmin('id'), certificationUpload.single('certificate'), addCertification);

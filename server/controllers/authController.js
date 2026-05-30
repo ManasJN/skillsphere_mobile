@@ -26,8 +26,12 @@ const register = async (req, res, next) => {
       password,
       department,
       rollNumber,
-      semester
+      semester,
+      role: requestedRole,
     } = req.body;
+
+    const normalizedRole = ['faculty', 'college'].includes(requestedRole) ? 'faculty' : 'student';
+    const verificationStatus = normalizedRole === 'faculty' ? 'pending' : 'unsubmitted';
 
     const existing = await User.findOne({ email });
 
@@ -52,8 +56,8 @@ const register = async (req, res, next) => {
       email,
       password,
 
-      role: 'student',
-      verificationStatus: 'unsubmitted',
+      role: normalizedRole,
+      verificationStatus,
 
       department,
 
@@ -122,7 +126,7 @@ const registerCollege = async (req, res, next) => {
       name: representativeName,
       email: officialEmail,
       password,
-      role: 'college',
+      role: 'faculty',
       verificationStatus: 'pending',
       otp,
       otpExpiry: Date.now() + 5 * 60 * 1000,

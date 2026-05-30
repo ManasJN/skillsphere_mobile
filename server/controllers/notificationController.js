@@ -64,7 +64,7 @@ const broadcast = async (req, res, next) => {
     const User = require('../models/User');
 
     const query = { role: 'student', isActive: true };
-    if (req.user.role === 'college') {
+    if (['faculty', 'college'].includes(req.user.role)) {
       query.collegeId = req.user.collegeId;
       query.verificationStatus = 'verified';
     }

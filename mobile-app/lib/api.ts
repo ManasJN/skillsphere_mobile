@@ -31,8 +31,11 @@ api.interceptors.request.use(
   },
 );
 
-let meCache: Promise<any> | null = null;
-const clearMeCache = () => { meCache = null; };
+// FIX 1: meCache caches the RESOLVED value, not the Promise.
+// Caching the Promise caused stale/wrong role data to be returned when
+// the cache held a Promise from a pre-login call.
+let meCacheValue: any | null = null;
+export const clearMeCache = () => { meCacheValue = null; };
 
 // Auto-logout on 401
 api.interceptors.response.use(
@@ -70,10 +73,12 @@ api.interceptors.response.use(
 // ─── API modules ─────────────────────────────────────────────────────────────
 
 export const authAPI = {
+  // FIX 2: Cache the resolved value, not the Promise. Clear on every auth action.
   me: async () => {
-    if (meCache) return meCache;
-    meCache = api.get('/auth/me').catch((err) => { clearMeCache(); throw err; });
-    return meCache;
+    if (meCacheValue) return meCacheValue;
+    const res = await api.get('/auth/me');
+    meCacheValue = res;
+    return meCacheValue;
   },
   login: (email: string, password: string) => {
     if (__DEV__) {
@@ -90,8 +95,13 @@ export const authAPI = {
     clearMeCache();
     return api.post('/auth/register', { name, email, password, role: serverRole });
   },
-  verifyOtp: (email: string, otp: string) =>
-    api.post('/auth/verify-otp', { email, otp }),
+  // FIX 3: verifyOtp MUST clear the meCache — the token just changed.
+  // Without this, the old cached /auth/me response (wrong role or unauthenticated)
+  // is returned to index.tsx after OTP verification, routing faculty to student tabs.
+  verifyOtp: async (email: string, otp: string) => {
+    clearMeCache();
+    return api.post('/auth/verify-otp', { email, otp });
+  },
   logout: () => {
     clearMeCache();
     return api.post('/auth/logout');
