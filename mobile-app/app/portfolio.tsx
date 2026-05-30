@@ -3,23 +3,15 @@
  *
  * Portfolio preview screen — read-only presentation mode.
  *
- * Receives a serialised PortfolioData object via expo-router params
- * (JSON string, base64 encoded to avoid URL encoding issues).
+ * FIX (Demo Polish): Made fully defensive against missing/undefined fields.
+ * When faculty opens a student profile, the raw API response may not match
+ * the full PortfolioData shape. All arrays and optional fields now use safe
+ * fallbacks so the screen never crashes.
  *
- * Design:
- *  - Typography-first, developer journal feel
- *  - Same dark theme as the rest of the app
- *  - Sections: Identity → Verifications → Skills → Timeline → Projects → Links
- *  - No edit affordances — pure presentation
- *  - "Share" button in header opens share.tsx
- *
- * Navigation:
- *   router.push('/portfolio?data=<base64_json>')
- *
- * Future public portfolio:
- *   When backend hosts /u/:userId, this screen serves as the in-app
- *   equivalent. A `userId` param mode can fetch fresh data from the
- *   public API and render identically.
+ * Changes:
+ *  - All array accesses guarded: (portfolio.skills ?? []), etc.
+ *  - codingStats, socialLinks, verifications safely defaulted
+ *  - normalisePortfolio() helper cleans raw API data before rendering
  */
 
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -49,6 +41,48 @@ import { CATEGORY_CONFIG, formatTimelineDate } from '@/lib/timeline';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Spacing, Typography } from '@/lib/theme';
 import { Avatar, Badge, Divider, ProgressBar, Row } from '@/components/ui';
 
+// ─── Defensive normaliser ─────────────────────────────────────────────────────
+//
+// The faculty student-list passes the raw API user object as the portfolio
+// data (a deliberate shortcut in students.tsx). That object may be missing
+// arrays like skills, projects, timeline, verifications, etc.
+// This function coerces any shape into a safe PortfolioData-like object
+// so PortfolioScreen never throws a TypeError.
+
+function normalisePortfolio(raw: any): PortfolioData {
+  return {
+    userId:   raw.userId   ?? raw._id   ?? '',
+    name:     raw.name     ?? 'Student',
+    email:    raw.email    ?? '',
+    role:     raw.role     ?? 'student',
+    bio:      raw.bio      ?? undefined,
+
+    department: raw.department ?? undefined,
+    batch:      raw.batch      ?? undefined,
+    college:    raw.college    ?? raw.collegeId?.collegeName ?? undefined,
+    aspiration: raw.aspiration ?? undefined,
+
+    level:    raw.level    ?? Math.floor((raw.xpPoints ?? 0) / 500) + 1,
+    xpPoints: raw.xpPoints ?? 0,
+
+    githubUsername: raw.githubUsername ?? raw.platformProfiles?.github ?? undefined,
+    socialLinks:    raw.socialLinks    ?? {},
+
+    // Core content — always arrays, never undefined
+    skills:        Array.isArray(raw.skills)        ? raw.skills        : [],
+    projects:      Array.isArray(raw.projects)      ? raw.projects      : [],
+    timeline:      Array.isArray(raw.timeline)      ? raw.timeline      : [],
+    verifications: Array.isArray(raw.verifications) ? raw.verifications : [],
+
+    // Coding stats — always an object, never undefined
+    codingStats: raw.codingStats && typeof raw.codingStats === 'object'
+      ? raw.codingStats
+      : {},
+
+    generatedAt: raw.generatedAt ?? new Date().toISOString(),
+  };
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function PortfolioScreen() {
@@ -57,11 +91,12 @@ export default function PortfolioScreen() {
   const portfolio = useMemo<PortfolioData | null>(() => {
     if (!dataParam) return null;
     try {
-      return JSON.parse(
-        typeof atob !== 'undefined'
-          ? atob(dataParam)
-          : Buffer.from(dataParam, 'base64').toString('utf8')
-      ) as PortfolioData;
+      const decoded = typeof atob !== 'undefined'
+        ? atob(dataParam)
+        : Buffer.from(dataParam, 'base64').toString('utf8');
+      const raw = JSON.parse(decoded);
+      // Normalise — guards against raw API objects from faculty student list
+      return normalisePortfolio(raw);
     } catch {
       return null;
     }
@@ -92,9 +127,11 @@ export default function PortfolioScreen() {
 
   const headline      = getPortfolioHeadline(portfolio);
   const initials      = getPortfolioInitials(portfolio.name);
-  const verifiedSigs  = portfolio.verifications.filter(v => v.status === 'verified');
+  // Safe: verifications is always an array after normalisePortfolio
+  const verifiedSigs  = (portfolio.verifications ?? []).filter(v => v?.status === 'verified');
   const portfolioUrl  = generatePortfolioUrl(portfolio.userId);
-  const hasCoding     = Object.values(portfolio.codingStats).some(v => (v as number) > 0);
+  // Safe: codingStats is always an object after normalisePortfolio
+  const hasCoding     = Object.values(portfolio.codingStats ?? {}).some(v => (v as number) > 0);
 
   return (
     <SafeAreaView edges={['top']} style={S.safe}>
@@ -138,7 +175,7 @@ export default function PortfolioScreen() {
                   label={portfolio.role}
                   color={portfolio.role === 'faculty' ? 'indigo' : 'teal'}
                 />
-                {portfolio.level > 1 && (
+                {(portfolio.level ?? 1) > 1 && (
                   <Badge label={`Level ${portfolio.level}`} color="blue" />
                 )}
               </Row>
@@ -164,20 +201,20 @@ export default function PortfolioScreen() {
         </Animated.View>
 
         {/* ── Skills ── */}
-        {portfolio.skills.length > 0 && (
+        {(portfolio.skills ?? []).length > 0 && (
           <PortfolioSection title="Skills" delay={60}>
             <View style={S.skillsGrid}>
-              {portfolio.skills.slice(0, 8).map((sk, i) => (
+              {(portfolio.skills ?? []).slice(0, 8).map((sk, i) => (
                 <View key={i} style={S.skillRow}>
-                  <View style={[S.skillDot, { backgroundColor: skillColor(sk.category) }]} />
+                  <View style={[S.skillDot, { backgroundColor: skillColor(sk?.category) }]} />
                   <View style={{ flex: 1, gap: 4 }}>
                     <Row style={{ justifyContent: 'space-between' }}>
-                      <Text style={S.skillName} numberOfLines={1}>{sk.name}</Text>
-                      <Text style={[S.skillPct, { color: skillColor(sk.category) }]}>
-                        {sk.level}%
+                      <Text style={S.skillName} numberOfLines={1}>{sk?.name ?? ''}</Text>
+                      <Text style={[S.skillPct, { color: skillColor(sk?.category) }]}>
+                        {sk?.level ?? 0}%
                       </Text>
                     </Row>
-                    <ProgressBar pct={sk.level} color={skillColor(sk.category)} height={3} />
+                    <ProgressBar pct={sk?.level ?? 0} color={skillColor(sk?.category)} height={3} />
                   </View>
                 </View>
               ))}
@@ -186,14 +223,19 @@ export default function PortfolioScreen() {
         )}
 
         {/* ── Timeline ── */}
-        {portfolio.timeline.length > 0 && (
+        {(portfolio.timeline ?? []).length > 0 && (
           <PortfolioSection title="Timeline" delay={80}>
             <View>
-              {portfolio.timeline.slice(0, 6).map((entry, i) => {
-                const cfg    = CATEGORY_CONFIG[entry.category];
-                const isLast = i === Math.min(portfolio.timeline.length, 6) - 1;
+              {(portfolio.timeline ?? []).slice(0, 6).map((entry, i) => {
+                if (!entry) return null;
+                // CATEGORY_CONFIG may be typed with specific keys; use a safe any-cast to allow
+                // defensive lookup and provide a final fallback object.
+                const cfg = (CATEGORY_CONFIG as Record<string, any>)[entry.category]
+                  ?? (CATEGORY_CONFIG as Record<string, any>)['other']
+                  ?? { color: Colors.text3, icon: 'ellipse', label: 'Other' };
+                const isLast = i === Math.min((portfolio.timeline ?? []).length, 6) - 1;
                 return (
-                  <View key={entry.id} style={S.tlRow}>
+                  <View key={entry.id ?? i} style={S.tlRow}>
                     {/* Rail */}
                     <View style={S.tlRail}>
                       <View style={[S.tlDot, { backgroundColor: cfg.color }]}>
@@ -204,19 +246,19 @@ export default function PortfolioScreen() {
                     {/* Content */}
                     <View style={[S.tlContent, { paddingBottom: isLast ? 0 : 18 }]}>
                       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Text style={S.tlTitle} numberOfLines={1}>{entry.title}</Text>
+                        <Text style={S.tlTitle} numberOfLines={1}>{entry.title ?? ''}</Text>
                         <Text style={S.tlDate}>{formatTimelineDate(entry.date, entry.endDate)}</Text>
                       </Row>
                       {entry.organisation && (
                         <Text style={S.tlOrg}>{entry.organisation}</Text>
                       )}
-                      <View style={[S.tlChip, { borderColor: cfg.color + '40' }]}>
+                      <View style={[S.tlChip, { borderColor: (cfg.color ?? Colors.text3) + '40' }]}>
                         <Text style={[S.tlChipTxt, { color: cfg.color }]}>{cfg.label}</Text>
                       </View>
                       {entry.description && (
                         <Text style={S.tlDesc} numberOfLines={2}>{entry.description}</Text>
                       )}
-                      {entry.tags && entry.tags.length > 0 && (
+                      {entry.tags && Array.isArray(entry.tags) && entry.tags.length > 0 && (
                         <Row style={S.tlTags}>
                           {entry.tags.slice(0, 4).map(tag => (
                             <View key={tag} style={S.tlTag}>
@@ -234,19 +276,19 @@ export default function PortfolioScreen() {
         )}
 
         {/* ── Projects ── */}
-        {portfolio.projects.length > 0 && (
+        {(portfolio.projects ?? []).length > 0 && (
           <PortfolioSection title="Projects" delay={100}>
             <View style={{ gap: 10 }}>
-              {portfolio.projects.slice(0, 4).map((p, i) => (
+              {(portfolio.projects ?? []).slice(0, 4).map((p, i) => (
                 <View key={i} style={S.projCard}>
                   <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Text style={S.projTitle} numberOfLines={1}>{p.title}</Text>
-                    <Badge label={p.status} color={projBadge(p.status)} />
+                    <Text style={S.projTitle} numberOfLines={1}>{p?.title ?? ''}</Text>
+                    <Badge label={p?.status ?? 'planned'} color={projBadge(p?.status)} />
                   </Row>
-                  {p.description ? (
+                  {p?.description ? (
                     <Text style={S.projDesc} numberOfLines={2}>{p.description}</Text>
                   ) : null}
-                  {p.techStack.length > 0 && (
+                  {Array.isArray(p?.techStack) && p.techStack.length > 0 && (
                     <Row style={{ flexWrap: 'wrap', gap: 5, marginTop: 4 }}>
                       {p.techStack.slice(0, 5).map(t => (
                         <View key={t} style={S.tag}>
@@ -266,12 +308,12 @@ export default function PortfolioScreen() {
           <PortfolioSection title="Coding" delay={120}>
             <Row style={{ flexWrap: 'wrap', gap: 8 }}>
               {[
-                ['Solved',    portfolio.codingStats.leetcodeSolved,    Colors.accentLight],
-                ['Easy',      portfolio.codingStats.leetcodeEasy,      Colors.success],
-                ['Medium',    portfolio.codingStats.leetcodeMedium,    Colors.warning],
-                ['Hard',      portfolio.codingStats.leetcodeHard,      Colors.danger],
-                ['CF Rating', portfolio.codingStats.codeforcesRating,  Colors.accent],
-                ['Repos',     portfolio.codingStats.githubRepos,       Colors.text2],
+                ['Solved',    (portfolio.codingStats ?? {}).leetcodeSolved,    Colors.accentLight],
+                ['Easy',      (portfolio.codingStats ?? {}).leetcodeEasy,      Colors.success],
+                ['Medium',    (portfolio.codingStats ?? {}).leetcodeMedium,    Colors.warning],
+                ['Hard',      (portfolio.codingStats ?? {}).leetcodeHard,      Colors.danger],
+                ['CF Rating', (portfolio.codingStats ?? {}).codeforcesRating,  Colors.accent],
+                ['Repos',     (portfolio.codingStats ?? {}).githubRepos,       Colors.text2],
               ]
                 .filter(([, v]) => v && (v as number) > 0)
                 .map(([lbl, val, clr]) => (
@@ -285,10 +327,10 @@ export default function PortfolioScreen() {
         )}
 
         {/* ── Social / Links ── */}
-        {Object.values(portfolio.socialLinks).some(Boolean) && (
+        {Object.values(portfolio.socialLinks ?? {}).some(Boolean) && (
           <PortfolioSection title="Links" delay={140}>
             <View style={{ gap: 10 }}>
-              {Object.entries(portfolio.socialLinks)
+              {Object.entries(portfolio.socialLinks ?? {})
                 .filter(([, v]) => v)
                 .map(([platform, link]) => (
                   <Pressable
@@ -306,6 +348,19 @@ export default function PortfolioScreen() {
                 ))}
             </View>
           </PortfolioSection>
+        )}
+
+        {/* Empty state — no content at all */}
+        {(portfolio.skills ?? []).length === 0 &&
+         (portfolio.projects ?? []).length === 0 &&
+         (portfolio.timeline ?? []).length === 0 && (
+          <View style={S.emptyState}>
+            <Ionicons name="person-outline" size={32} color={Colors.text4} />
+            <Text style={S.emptyTitle}>Profile in progress</Text>
+            <Text style={S.emptyBody}>
+              This student hasn't added skills, projects, or timeline entries yet.
+            </Text>
+          </View>
         )}
 
         {/* Footer */}
@@ -347,7 +402,6 @@ function projBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
 
 const S = StyleSheet.create({
   safe:    { backgroundColor: Colors.bg1, flex: 1 },
-  // Consistent 20px horizontal padding, 24px top breathing room, structured gap
   content: { paddingBottom: 56, paddingHorizontal: 20, paddingTop: 24 },
 
   // Error state
@@ -356,18 +410,14 @@ const S = StyleSheet.create({
   backLink:  { padding: 8 },
   backLinkTxt: { ...Typography.bodySm, color: Colors.accent },
 
-  // Top bar — taller, more generous hit targets
+  // Top bar
   topBar: {
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: Spacing.lg,
     paddingVertical: 14,
   },
-  backBtn: {
-    // Slightly larger tap zone
-    padding: 4,
-    marginLeft: -4,
-  },
+  backBtn: { padding: 4, marginLeft: -4 },
   topBarTitle: { ...Typography.h4, color: Colors.text0 },
   topBarSub:   { ...Typography.bodyXs, color: Colors.text4, marginTop: 2 },
   shareBtn: {
@@ -383,50 +433,30 @@ const S = StyleSheet.create({
   },
   shareBtnTxt: { ...Typography.uiSm, color: Colors.accent, fontWeight: '600' },
 
-  // Hero — more vertical breathing room, aligned baseline rhythm
-  hero: {
-    gap: 14,
-    paddingBottom: 24,
-    paddingTop: 4,
-  },
+  // Hero
+  hero: { gap: 14, paddingBottom: 24, paddingTop: 4 },
   heroTop:     { gap: 16, alignItems: 'flex-start' },
   heroMeta:    { flex: 1, gap: 4 },
   heroName:    { ...Typography.h2, color: Colors.text0 },
   heroHeadline:{ ...Typography.bodySm, color: Colors.text2, marginTop: 1 },
   heroBio:     { ...Typography.bodySm, color: Colors.text3, lineHeight: 20, marginTop: 6 },
-
   verifyStrip: { flexWrap: 'wrap', gap: 6, marginTop: 6 },
-
-  // URL as a subtle row — not a button, just a reference
   urlRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    opacity: 0.7,
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, opacity: 0.7,
   },
-  urlTxt: {
-    ...Typography.bodyXs,
-    color: Colors.text3,
-    flex: 1,
-  },
+  urlTxt: { ...Typography.bodyXs, color: Colors.text3, flex: 1 },
 
-  // Section — consistent 24px top gap, 12px divider margin, 18px bottom padding
+  // Section
   section: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border1,
-    paddingTop: 24,
-    paddingBottom: 10,
-    gap: 0,
+    paddingTop: 24, paddingBottom: 10, gap: 0,
   },
   sectionTitle: {
-    ...Typography.label,
-    color: Colors.text3,
-    marginBottom: 14,
-    letterSpacing: 0.6,
+    ...Typography.label, color: Colors.text3, marginBottom: 14, letterSpacing: 0.6,
   },
 
-  // Skills — consistent gap, slightly taller rows for readability
+  // Skills
   skillsGrid: { gap: 13 },
   skillRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   skillDot: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
@@ -462,16 +492,15 @@ const S = StyleSheet.create({
   },
   tlTagTxt: { ...Typography.bodyXs, color: Colors.text2 },
 
-  // Projects — slightly more spacious cards
+  // Projects
   projCard: {
     backgroundColor: Colors.bg2, borderColor: Colors.border1,
-    borderRadius: Radius.lg, borderWidth: 1, gap: 8, padding: 14,
-    marginBottom: 8,
+    borderRadius: Radius.lg, borderWidth: 1, gap: 8, padding: 14, marginBottom: 8,
   },
   projTitle: { ...Typography.h4, color: Colors.text0, flex: 1 },
   projDesc:  { ...Typography.bodySm, color: Colors.text2, lineHeight: 19 },
 
-  // Coding — consistent cell layout, wider min-width
+  // Coding
   codingCell: {
     alignItems: 'center', backgroundColor: Colors.bg2, borderColor: Colors.border1,
     borderRadius: Radius.md, borderWidth: 1, gap: 4, padding: 12,
@@ -480,7 +509,7 @@ const S = StyleSheet.create({
   codingVal: { ...Typography.h3, color: Colors.text0 },
   codingLbl: { ...Typography.bodyXs, color: Colors.text3, fontSize: 11 },
 
-  // Tags — pill shape consistent with app-wide tags
+  // Tags
   tag: {
     backgroundColor: Colors.bg3, borderColor: Colors.border1,
     borderRadius: Radius.full, borderWidth: 1,
@@ -488,17 +517,25 @@ const S = StyleSheet.create({
   },
   tagTxt: { ...Typography.bodyXs, color: Colors.text3, fontWeight: '500' },
 
-  // Links — more generous row height, platform label left-aligned
+  // Links
   linkRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border0,
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border0,
   },
   linkPlatform: { ...Typography.uiSm, color: Colors.text1, minWidth: 80 },
   linkUrl: { ...Typography.bodySm, color: Colors.text3, flex: 1 },
 
-  // Footer — more breathing room
+  // Empty state
+  emptyState: {
+    alignItems: 'center', gap: 10,
+    paddingTop: 40, paddingBottom: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border1,
+  },
+  emptyTitle: { ...Typography.h4, color: Colors.text3 },
+  emptyBody:  { ...Typography.bodySm, color: Colors.text4, textAlign: 'center', lineHeight: 20 },
+
+  // Footer
   footer: { alignItems: 'center', paddingTop: 40, paddingBottom: 8, gap: 4 },
   footerMark: { ...Typography.label, color: Colors.text4, letterSpacing: 0.8 },
   footerTxt:  { ...Typography.bodyXs, color: Colors.border2 },
