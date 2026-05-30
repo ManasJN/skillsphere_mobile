@@ -21,7 +21,7 @@ import { useFadeSlideIn } from '@/hooks/useAnimations';
 export default function LoginScreen() {
   useEffect(() => {
     AsyncStorage.getItem(TOKEN_STORAGE_KEY).then(token => {
-      if (token) router.replace('/(tabs)');
+      if (token) router.replace('/');
     });
   }, []);
 
@@ -48,7 +48,7 @@ export default function LoginScreen() {
       const token = response.data?.token ?? response.data?.accessToken ?? response.data?.jwt;
       if (!token) throw new Error('Login succeeded but no token returned from server');
       await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (err: any) {
       const message = err?.response?.data?.message ?? err?.message ?? String(err);
       setError(message);

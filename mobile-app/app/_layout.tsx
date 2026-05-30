@@ -44,8 +44,11 @@ export default function RootLayout() {
           <Stack.Screen name="register"        options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="otp-verification" options={{ animation: 'slide_from_right' }} />
 
-          {/* Main app */}
+          {/* Main app — student side */}
           <Stack.Screen name="(tabs)"          options={{ animation: 'none' }} />
+
+          {/* Main app — faculty/college side */}
+          <Stack.Screen name="(faculty-tabs)"  options={{ animation: 'none' }} />
 
           {/* Portfolio system */}
           <Stack.Screen name="portfolio"       options={{ animation: 'slide_from_bottom' }} />

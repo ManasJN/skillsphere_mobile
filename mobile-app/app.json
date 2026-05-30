@@ -22,7 +22,9 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.manzy_17.skillsphere",
       "usesCleartextTraffic": true,
-      "permissions": ["INTERNET"]
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,7 +43,8 @@
             "backgroundColor": "#080B12"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

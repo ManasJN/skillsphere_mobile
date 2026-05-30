@@ -82,9 +82,8 @@ export const authAPI = {
     clearMeCache();
     return api.post('/auth/login', { email, password });
   },
-  // Frontend uses "faculty" UI label for college accounts.
   register: (name: string, email: string, password: string, role: string) => {
-    const serverRole = role === 'faculty' ? 'college' : role;
+    const serverRole = role;
     if (__DEV__) {
       console.log('[authAPI] register payload', { name, email, password, role: serverRole });
     }

@@ -1,18 +1,12 @@
 /**
- * app/index.tsx — Auth gate
+ * app/index.tsx — Auth gate + role-based routing
  *
- * This is the first screen Expo Router renders (root index route).
- * It checks for a stored JWT, validates it against /auth/me, then routes:
- *   - Token exists + valid  → /(tabs)   (returning user, skip login)
- *   - Token missing/invalid → /login    (new or logged-out user)
+ * Routes after token validation:
+ *   - role === 'faculty'           → /(faculty-tabs)
+ *   - role === 'student' (default)  → /(tabs)
+ *   - No token / 401                → /login
  *
- * Shows a minimal loading state while checking — no flash of login screen
- * for authenticated users.
- *
- * Why this exists:
- *   initialRouteName="login" in _layout.tsx always renders login first.
- *   This index route intercepts before any tab/login screen renders and
- *   redirects silently. The animation="none" on redirect prevents any flicker.
+ * The role is read from /auth/me so it is always authoritative.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,7 +17,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
 import { Colors } from '@/lib/theme';
 
-type AuthState = 'checking' | 'authenticated' | 'unauthenticated';
+type AuthState = 'checking' | 'student' | 'faculty' | 'unauthenticated';
 
 export default function AuthGate() {
   const [state, setState] = useState<AuthState>('checking');
@@ -38,11 +32,12 @@ export default function AuthGate() {
           if (!cancelled) setState('unauthenticated');
           return;
         }
-        // Validate the token is still accepted by the server.
-        // If /auth/me returns 401, the response interceptor in api.ts will
-        // clear the token and redirect — but we catch it here too for safety.
-        await authAPI.me();
-        if (!cancelled) setState('authenticated');
+
+        const res  = await authAPI.me();
+        const user = res.data?.data ?? res.data;
+        const isFaculty = ['faculty', 'college'].includes(user?.role);
+        const role: AuthState = isFaculty ? 'faculty' : 'student';
+        if (!cancelled) setState(role);
       } catch (err: any) {
         if (!cancelled) {
           if (err?.response?.status === 401) {
@@ -65,10 +60,8 @@ export default function AuthGate() {
     );
   }
 
-  if (state === 'authenticated') {
-    return <Redirect href="/(tabs)" />;
-  }
-
+  if (state === 'faculty')  return <Redirect href="/(faculty-tabs)/dashboard" />;
+  if (state === 'student')  return <Redirect href="/(tabs)" />;
   return <Redirect href="/login" />;
 }
 

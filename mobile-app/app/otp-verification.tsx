@@ -52,7 +52,7 @@ export default function OtpVerificationScreen() {
       const res = await authAPI.verifyOtp(email, otp);
       const token = res.data?.token ?? res.data?.accessToken ?? res.data?.jwt;
       if (token) await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (err) {
       if (isAxiosError(err)) {
         if (err.response?.data?.message) setError(err.response.data.message);
