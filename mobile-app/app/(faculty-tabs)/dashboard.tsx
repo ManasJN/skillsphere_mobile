@@ -104,7 +104,7 @@ export default function FacultyDashboard() {
         stats,
         topStudents: students.slice(0, 5),
         facultyName: me?.name ?? 'Faculty',
-        collegeName: me?.collegeId?.collegeName ?? me?.college ?? 'Your College',
+        collegeName: me?.collegeId?.collegeName ?? me?.college ?? 'Jorhat Engineering College',
       });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Could not load dashboard.');

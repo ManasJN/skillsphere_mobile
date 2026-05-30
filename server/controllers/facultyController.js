@@ -1,19 +1,16 @@
 /**
  * server/controllers/facultyController.js
  *
- * Phase 1 endpoints:
- *   GET /api/faculty/students       — all students in this college
- *   GET /api/faculty/students/:id   — single student full profile
- *   GET /api/faculty/stats          — aggregate dashboard stats
- *   GET /api/faculty/announcements  — announcements by this college (empty list for now)
+ * DEMO MODE (JEC-only):
+ *   - collegeId enforcement is removed entirely.
+ *   - All faculty accounts can view ALL registered students.
+ *   - No college-link requirement. No approval workflow.
  *
- * Phase 2 will add:
- *   POST /api/faculty/announcements
- *   POST /api/faculty/opportunities
+ * Phase 2 will re-introduce multi-college isolation.
  */
 
 const User         = require('../models/User');
-const Announcement = require('../models/Announcement');   // may not exist yet — handled below
+const Announcement = require('../models/Announcement');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,10 +18,8 @@ const STUDENT_LIST_SELECT =
   'name email department semester rollNumber xpPoints level ' +
   'verificationStatus codingStats college collegeId batch createdAt lastActiveAt';
 
-const STUDENT_DETAIL_SELECT =
-  '-password -otp -otpExpiry';
+const STUDENT_DETAIL_SELECT = '-password -otp -otpExpiry';
 
-// Safely compute week-ago date
 function weekAgo() {
   const d = new Date();
   d.setDate(d.getDate() - 7);
@@ -37,16 +32,8 @@ exports.getStudents = async (req, res) => {
   try {
     const { limit, sort, department, semester } = req.query;
 
-    // Faculty can only see students from their own college
-    const collegeId = req.user.collegeId;
-    if (!collegeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'No college linked to this faculty account.',
-      });
-    }
-
-    const filter = { role: 'student', collegeId };
+    // DEMO: no collegeId filter — faculty sees all students
+    const filter = { role: 'student' };
     if (department) filter.department = department;
     if (semester)   filter.semester   = Number(semester);
 
@@ -76,11 +63,10 @@ exports.getStudents = async (req, res) => {
 
 exports.getStudent = async (req, res) => {
   try {
-    const collegeId = req.user.collegeId;
+    // DEMO: no collegeId scope — any student can be viewed
     const student = await User.findOne({
-      _id:       req.params.id,
-      role:      'student',
-      collegeId, // scope to same college
+      _id:  req.params.id,
+      role: 'student',
     })
       .select(STUDENT_DETAIL_SELECT)
       .populate('collegeId', 'collegeName domain')
@@ -101,35 +87,19 @@ exports.getStudent = async (req, res) => {
 
 exports.getStats = async (req, res) => {
   try {
-    const collegeId = req.user.collegeId;
-    if (!collegeId) {
-      return res.status(200).json({
-        success: true,
-        data: { totalStudents: 0, verifiedStudents: 0, activeThisWeek: 0, avgXP: 0, topDepartments: [] },
-      });
-    }
-
-    const baseFilter = { role: 'student', collegeId };
+    // DEMO: stats across ALL students, no college filter
+    const baseFilter = { role: 'student' };
 
     const [total, verified, activeThisWeek, xpAgg, deptAgg] = await Promise.all([
-      // total students
       User.countDocuments(baseFilter),
-
-      // verified students
       User.countDocuments({ ...baseFilter, verificationStatus: 'verified' }),
-
-      // active in last 7 days
       User.countDocuments({ ...baseFilter, lastActiveAt: { $gte: weekAgo() } }),
-
-      // average XP
       User.aggregate([
-        { $match: { ...baseFilter } },
+        { $match: baseFilter },
         { $group: { _id: null, avg: { $avg: '$xpPoints' } } },
       ]),
-
-      // top departments by headcount
       User.aggregate([
-        { $match: { ...baseFilter } },
+        { $match: baseFilter },
         { $group: { _id: '$department', count: { $sum: 1 } } },
         { $sort:  { count: -1 } },
         { $limit: 5 },
@@ -157,21 +127,17 @@ exports.getStats = async (req, res) => {
 
 exports.getAnnouncements = async (req, res) => {
   try {
-    // Gracefully handle case where Announcement model doesn't exist yet (Phase 2)
     if (!Announcement || typeof Announcement.find !== 'function') {
       return res.status(200).json({ success: true, data: [] });
     }
 
-    const announcements = await Announcement.find({
-      author: req.user._id,
-    })
+    const announcements = await Announcement.find({ author: req.user._id })
       .sort({ pinned: -1, createdAt: -1 })
       .populate('author', 'name')
       .lean();
 
     return res.status(200).json({ success: true, data: announcements });
   } catch (err) {
-    // If model doesn't exist, just return empty
     return res.status(200).json({ success: true, data: [] });
   }
 };

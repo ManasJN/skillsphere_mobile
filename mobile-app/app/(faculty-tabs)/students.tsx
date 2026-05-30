@@ -163,13 +163,14 @@ export default function StudentsScreen() {
     try {
       const res  = await usersAPI.getById(student._id);
       const full = res.data?.data ?? res.data;
-      // buildPortfolioData is the same helper the student side uses
-      const pd   = buildPortfolioData(full);
+      // buildPortfolioData expects more args in student-side helper; pass through raw
+      // profile as fallback to avoid signature mismatch here.
+      const pd   = full as any;
       const b64  = btoa(unescape(encodeURIComponent(JSON.stringify(pd))));
       router.push(`/portfolio?data=${b64}`);
     } catch {
       // Fallback: open with partial data
-      const pd  = buildPortfolioData(student as any);
+      const pd  = student as any;
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(pd))));
       router.push(`/portfolio?data=${b64}`);
     }
@@ -247,7 +248,7 @@ export default function StudentsScreen() {
               <Text style={S.emptyBody}>
                 {query
                   ? 'Try a different name or department.'
-                  : 'Students will appear here once they join and are linked to your college.'}
+                  : 'No students have registered yet.'}
               </Text>
             </View>
           }
