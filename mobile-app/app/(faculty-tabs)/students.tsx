@@ -56,56 +56,76 @@ function StudentCard({
   student,
   onPress,
 }: { student: FacultyStudent; onPress: () => void }) {
-  const initials = student.name
-    .split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase();
+  const name = student.name?.trim() || 'Student';
+  const initials = name
+    .split(' ')
+    .filter((p: string) => p.length > 0)
+    .map((p: string) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'SS';
 
-  const lc    = student.codingStats?.leetcodeSolved ?? 0;
-  const repos = student.codingStats?.githubRepos ?? 0;
+  const xp      = student.xpPoints ?? 0;
+  const level   = student.level ?? (Math.floor(xp / 500) + 1);
+  const lc      = student.codingStats?.leetcodeSolved ?? 0;
+  const githubConnected = !!(student as any).platformProfiles?.github ||
+                           !!(student as any).githubUsername;
 
   return (
     <Pressable style={S.card} onPress={onPress} android_ripple={{ color: Colors.border1 }}>
       <View style={S.cardInner}>
-        {/* Avatar */}
-        <View style={S.avatar}>
-          <Text style={S.avatarText}>{initials}</Text>
+
+        {/* Avatar + Level badge */}
+        <View style={S.avatarWrap}>
+          <View style={S.avatar}>
+            <Text style={S.avatarText}>{initials}</Text>
+          </View>
+          <View style={S.levelBadge}>
+            <Text style={S.levelText}>L{level}</Text>
+          </View>
         </View>
 
-        {/* Info */}
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={S.cardName} numberOfLines={1}>{student.name}</Text>
+        {/* Main info */}
+        <View style={{ flex: 1, gap: 3 }}>
+          {/* Name + dept */}
+          <Text style={S.cardName} numberOfLines={1}>{name}</Text>
           <Text style={S.cardMeta} numberOfLines={1}>
-            {[student.department, student.semester ? `Sem ${student.semester}` : null, student.rollNumber]
-              .filter(Boolean).join(' · ')}
+            {[student.department, student.rollNumber]
+              .filter(Boolean).join(' · ') || 'JEC'}
           </Text>
 
-          {/* Stats row */}
+          {/* XP bar */}
+          <View style={S.xpRow}>
+            <Ionicons name="star" size={10} color={Colors.warning} />
+            <Text style={S.xpText}>{xp.toLocaleString()} XP</Text>
+          </View>
+
+          {/* Stat chips row */}
           <View style={S.statsRow}>
-            {lc > 0 && (
-              <View style={S.miniStat}>
-                <Ionicons name="code-slash-outline" size={11} color={Colors.text4} />
-                <Text style={S.miniStatText}>{lc} LC</Text>
-              </View>
-            )}
-            {repos > 0 && (
-              <View style={S.miniStat}>
-                <Ionicons name="logo-github" size={11} color={Colors.text4} />
-                <Text style={S.miniStatText}>{repos} repos</Text>
-              </View>
-            )}
-            {(student.xpPoints ?? 0) > 0 && (
-              <View style={S.miniStat}>
-                <Ionicons name="star-outline" size={11} color={Colors.text4} />
-                <Text style={S.miniStatText}>{student.xpPoints} XP</Text>
-              </View>
-            )}
+            {/* LeetCode */}
+            <View style={[S.chip, { backgroundColor: lc > 0 ? Colors.accentDim : Colors.bg3 }]}>
+              <Ionicons name="code-slash-outline" size={10} color={lc > 0 ? Colors.accent : Colors.text4} />
+              <Text style={[S.chipText, { color: lc > 0 ? Colors.accent : Colors.text4 }]}>
+                {lc > 0 ? `${lc} LC` : 'LC –'}
+              </Text>
+            </View>
+
+            {/* GitHub connected */}
+            <View style={[S.chip, { backgroundColor: githubConnected ? Colors.accentDim : Colors.bg3 }]}>
+              <Ionicons name="logo-github" size={10} color={githubConnected ? Colors.accent : Colors.text4} />
+              <Text style={[S.chipText, { color: githubConnected ? Colors.accent : Colors.text4 }]}>
+                {githubConnected ? 'GitHub ✓' : 'GitHub –'}
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Right side */}
         <View style={S.cardRight}>
           <VChip status={student.verificationStatus} />
-          <Ionicons name="chevron-forward" size={16} color={Colors.text4} style={{ marginTop: 4 }} />
+          <Ionicons name="chevron-forward" size={16} color={Colors.text4} style={{ marginTop: 6 }} />
         </View>
+
       </View>
     </Pressable>
   );
@@ -148,14 +168,19 @@ export default function StudentsScreen() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return all;
-    const q = query.toLowerCase();
-    return all.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      (s.department ?? '').toLowerCase().includes(q) ||
-      (s.rollNumber ?? '').toLowerCase().includes(q) ||
-      (s.email ?? '').toLowerCase().includes(q),
-    );
+    const list = !query.trim()
+      ? all
+      : (() => {
+          const q = query.toLowerCase();
+          return all.filter(s =>
+            s.name.toLowerCase().includes(q) ||
+            (s.department ?? '').toLowerCase().includes(q) ||
+            (s.rollNumber ?? '').toLowerCase().includes(q) ||
+            (s.email ?? '').toLowerCase().includes(q),
+          );
+        })();
+    // Sort by XP descending — top performers first
+    return [...list].sort((a, b) => (b.xpPoints ?? 0) - (a.xpPoints ?? 0));
   }, [all, query]);
 
   // Open student portfolio — fetch full profile then pass to portfolio.tsx
@@ -320,20 +345,42 @@ const S = StyleSheet.create({
     gap: Spacing.md,
     paddingVertical: Spacing.md,
   },
+
+  // Avatar with level badge overlay
+  avatarWrap: { position: 'relative', width: 44, height: 44 },
   avatar: {
-    width: 40, height: 40, borderRadius: Radius.full,
+    width: 44, height: 44, borderRadius: Radius.full,
     backgroundColor: Colors.accentDim,
     borderColor: Colors.accentMid, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText:  { ...Typography.uiSm, color: Colors.accent, fontWeight: '700' },
-  cardName:    { ...Typography.uiSm, color: Colors.text0 },
+  avatarText: { ...Typography.uiSm, color: Colors.accent, fontWeight: '700' },
+  levelBadge: {
+    position: 'absolute', bottom: -3, right: -3,
+    backgroundColor: Colors.bg3,
+    borderColor: Colors.accentMid, borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: 4, paddingVertical: 1,
+    minWidth: 20, alignItems: 'center',
+  },
+  levelText: { fontSize: 8, fontWeight: '700', color: Colors.accent },
+
+  cardName:    { ...Typography.uiSm, color: Colors.text0, fontWeight: '600' },
   cardMeta:    { ...Typography.bodyXs, color: Colors.text3 },
   cardRight:   { alignItems: 'flex-end', gap: Spacing.xxs },
 
-  statsRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: 2, flexWrap: 'wrap' },
-  miniStat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  miniStatText: { ...Typography.bodyXs, color: Colors.text4 },
+  // XP row
+  xpRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  xpText: { ...Typography.bodyXs, color: Colors.warning, fontWeight: '600' },
+
+  // Stat chips
+  statsRow: { flexDirection: 'row', gap: Spacing.xs, marginTop: 3, flexWrap: 'wrap' },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    borderRadius: Radius.xs,
+    paddingHorizontal: 6, paddingVertical: 3,
+  },
+  chipText: { fontSize: 10, fontWeight: '600' },
 
   vchip: { borderRadius: Radius.xs, paddingHorizontal: 6, paddingVertical: 2 },
   vchipText: { ...Typography.bodyXs, fontWeight: '600', fontSize: 10 },

@@ -184,9 +184,13 @@ export function generateShareMessage(data: PortfolioData): string {
 // ─── Display helpers ──────────────────────────────────────────────────────────
 
 /** Returns initials for display in portfolio header (1–2 chars). */
-export function getPortfolioInitials(name: string): string {
-  return name
+export function getPortfolioInitials(name?: string | null): string {
+  if (!name || typeof name !== 'string') return 'SS';
+  const trimmed = name.trim();
+  if (!trimmed) return 'SS';
+  return trimmed
     .split(' ')
+    .filter(p => p.length > 0)
     .map(p => p[0])
     .join('')
     .slice(0, 2)
