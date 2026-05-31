@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TOKEN_STORAGE_KEY, authAPI, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
+import { TOKEN_STORAGE_KEY, authAPI, setLoggingOut as setLoggingOut_api, clearMeCache, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Surface, Typography } from '@/lib/theme';
 import { Avatar, Badge, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
@@ -162,18 +162,34 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
+  const executeLogout = async () => {
+    setLoggingOut(true);         // local UI state — disables the button
+    setLoggingOut_api(true);     // module-level flag — suppresses 401 interceptor re-navigation
+
+    // Clear auth state BEFORE navigating so in-flight requests that complete
+    // after this point see no token and do not trigger a second navigation.
+    clearMeCache();
+    await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+
     try {
-      await authAPI.logout();
-    } catch {
-      /* ignore */
-    } finally {
-      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-      router.replace('/'); // Auth gate will redirect to /login
-      setLoggingOut(false);
-    }
+      await authAPI.logout();    // best-effort server session invalidation
+    } catch { /* ignore — token already removed locally */ }
+
+    router.replace('/login');
+    // Do NOT reset setLoggingOut(false) — this component is now unmounting.
+  };
+
+  const handleLogout = () => {
+    if (loggingOut) return;
+
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Logout', style: 'destructive', onPress: executeLogout },
+      ]
+    );
   };
 
   const xp       = user?.xpPoints ?? 0;

@@ -37,6 +37,14 @@ api.interceptors.request.use(
 let meCacheValue: any | null = null;
 export const clearMeCache = () => { meCacheValue = null; };
 
+// ── Logout guard ──────────────────────────────────────────────────────────────
+// Set to true during intentional logout so the 401 interceptor does NOT fire
+// a competing router.replace() when in-flight requests return 401 after the
+// token has been removed. Reset to false on next login / OTP verification.
+let _isLoggingOut = false;
+export const setLoggingOut   = (v: boolean) => { _isLoggingOut = v; };
+export const getIsLoggingOut = () => _isLoggingOut;
+
 // Auto-logout on 401
 api.interceptors.response.use(
   (response) => response,
@@ -60,9 +68,12 @@ api.interceptors.response.use(
 
     if (status === 401) {
       clearMeCache();
-      if (!isLoginOrRegister && !isLogoutRequest) {
+      // During an intentional logout the token is already removed and navigation
+      // is already in progress — don't fire a second router.replace() here or
+      // it will race against the logout navigation and re-mount student tabs.
+      if (!isLoginOrRegister && !isLogoutRequest && !_isLoggingOut) {
         await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY]);
-        router.replace('/'); // Route through auth gate for clean state reset
+        router.replace('/login');
       }
     }
 
@@ -84,6 +95,7 @@ export const authAPI = {
     if (__DEV__) {
       console.log('[authAPI] login payload', { email, password });
     }
+    _isLoggingOut = false;
     clearMeCache();
     return api.post('/auth/login', { email, password });
   },
@@ -99,6 +111,7 @@ export const authAPI = {
   // Without this, the old cached /auth/me response (wrong role or unauthenticated)
   // is returned to index.tsx after OTP verification, routing faculty to student tabs.
   verifyOtp: async (email: string, otp: string) => {
+    _isLoggingOut = false;
     clearMeCache();
     return api.post('/auth/verify-otp', { email, otp });
   },

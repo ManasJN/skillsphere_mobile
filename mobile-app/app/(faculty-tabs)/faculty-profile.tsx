@@ -84,12 +84,12 @@ export default function FacultyProfileScreen() {
 
   const handleLogout = useCallback(() => {
     Alert.alert(
-      'Sign out',
-      'Are you sure you want to sign out?',
+      'Logout',
+      'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Sign out',
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             setLoggingOut(true);

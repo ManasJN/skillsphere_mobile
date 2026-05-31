@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { authAPI } from '@/lib/api';
+import { authAPI, clearMeCache } from '@/lib/api';
 import { Colors, Control, Shadow, Spacing, Typography } from '@/lib/theme';
 import { useTabFocus } from '@/hooks/useAnimations';
 
@@ -52,6 +52,9 @@ export default function TabLayout() {
   // back to faculty tabs. This is a safety net for Expo Router stack replays.
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
+    // Clear the me-cache before checking — if we just logged out, the
+    // cached response would still show the old user and bypass the guard.
+    clearMeCache();
     authAPI.me()
       .then((res) => {
         const user = res.data?.data ?? res.data;
