@@ -184,3 +184,20 @@ export const achievementsAPI = {
   getMine: () => api.get('/achievements/my'),
   getAll:  () => api.get('/achievements'),
 };
+
+// ─── Shared Announcements ─────────────────────────────────────────────────────
+// GET  /api/announcements          — any authenticated user (students + faculty)
+// POST /api/faculty/announcements  — faculty only
+
+export const announcementsAPI = {
+  /** Fetch all published announcements. Available to any authenticated user. */
+  getAll: (params?: Record<string, string>) =>
+    api.get('/announcements', { params }),
+
+  /** Faculty: create a new shared announcement. */
+  create: (data: { title: string; description: string; category: string }) =>
+    api.post('/faculty/announcements', data),
+
+  /** Faculty: fetch only MY posted announcements. */
+  getMine: () => api.get('/faculty/announcements'),
+};

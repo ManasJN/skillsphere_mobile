@@ -2,11 +2,9 @@
  * server/controllers/facultyController.js
  *
  * DEMO MODE (JEC-only):
- *   - collegeId enforcement is removed entirely.
- *   - All faculty accounts can view ALL registered students.
- *   - No college-link requirement. No approval workflow.
- *
- * Phase 2 will re-introduce multi-college isolation.
+ *   - collegeId enforcement removed. All faculty see all students.
+ *   - Announcements are shared ecosystem-wide (no college filter).
+ *   - Phase 2 will re-introduce multi-college isolation.
  */
 
 const User         = require('../models/User');
@@ -32,7 +30,6 @@ exports.getStudents = async (req, res) => {
   try {
     const { limit, sort, department, semester } = req.query;
 
-    // DEMO: no collegeId filter — faculty sees all students
     const filter = { role: 'student' };
     if (department) filter.department = department;
     if (semester)   filter.semester   = Number(semester);
@@ -63,11 +60,7 @@ exports.getStudents = async (req, res) => {
 
 exports.getStudent = async (req, res) => {
   try {
-    // DEMO: no collegeId scope — any student can be viewed
-    const student = await User.findOne({
-      _id:  req.params.id,
-      role: 'student',
-    })
+    const student = await User.findOne({ _id: req.params.id, role: 'student' })
       .select(STUDENT_DETAIL_SELECT)
       .populate('collegeId', 'collegeName domain')
       .lean();
@@ -87,7 +80,6 @@ exports.getStudent = async (req, res) => {
 
 exports.getStats = async (req, res) => {
   try {
-    // DEMO: stats across ALL students, no college filter
     const baseFilter = { role: 'student' };
 
     const [total, verified, activeThisWeek, xpAgg, deptAgg] = await Promise.all([
@@ -124,29 +116,55 @@ exports.getStats = async (req, res) => {
 };
 
 // ── GET /api/faculty/announcements ───────────────────────────────────────────
+// Returns all announcements posted by this faculty member, newest first.
 
 exports.getAnnouncements = async (req, res) => {
   try {
-    if (!Announcement || typeof Announcement.find !== 'function') {
-      return res.status(200).json({ success: true, data: [] });
-    }
-
-    const announcements = await Announcement.find({ author: req.user._id })
-      .sort({ pinned: -1, createdAt: -1 })
-      .populate('author', 'name')
+    const announcements = await Announcement.find({
+      createdBy: req.user._id,
+      isPublished: true,
+    })
+      .sort({ createdAt: -1 })
+      .populate('createdBy', 'name')
       .lean();
 
     return res.status(200).json({ success: true, data: announcements });
   } catch (err) {
-    return res.status(200).json({ success: true, data: [] });
+    console.error('[faculty] getAnnouncements error:', err);
+    return res.status(500).json({ success: false, message: 'Server error fetching announcements.' });
   }
 };
 
-// ── POST /api/faculty/announcements (Phase 2 stub) ───────────────────────────
+// ── POST /api/faculty/announcements ──────────────────────────────────────────
+// Create a new shared announcement visible to all students.
 
 exports.createAnnouncement = async (req, res) => {
-  return res.status(501).json({
-    success: false,
-    message: 'Announcement creation coming in Phase 2.',
-  });
+  try {
+    const { title, description, category } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, message: 'Title is required.' });
+    }
+    if (!description || !description.trim()) {
+      return res.status(400).json({ success: false, message: 'Description is required.' });
+    }
+
+    const VALID_CATEGORIES = ['Academic', 'Internship', 'Event', 'Hackathon', 'Workshop', 'General'];
+    const resolvedCategory = VALID_CATEGORIES.includes(category) ? category : 'General';
+
+    const announcement = await Announcement.create({
+      title:       title.trim(),
+      description: description.trim(),
+      category:    resolvedCategory,
+      createdBy:   req.user._id,
+    });
+
+    // Populate createdBy for the response
+    await announcement.populate('createdBy', 'name');
+
+    return res.status(201).json({ success: true, data: announcement });
+  } catch (err) {
+    console.error('[faculty] createAnnouncement error:', err);
+    return res.status(500).json({ success: false, message: 'Server error creating announcement.' });
+  }
 };

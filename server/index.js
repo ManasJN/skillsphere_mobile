@@ -65,6 +65,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/colleges',      require('./routes/colleges'));
 app.use('/api/faculty',       require('./routes/faculty'));    // Phase 1 — faculty/college dashboard
+app.use('/api/announcements', require('./routes/announcements')); // Shared ecosystem announcements
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {

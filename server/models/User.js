@@ -175,7 +175,12 @@ userSchema.methods.toPublicJSON = function () {
 // ── Virtual: full coding score (for leaderboard) ──────────────────────────────
 userSchema.virtual('codingScore').get(function () {
   const s = this.codingStats;
-  return (s.leetcodeSolved * 10) + Math.floor(s.codeforcesRating / 10) + (s.githubContributions * 2);
+  if (!s) return 0;
+  return (
+    (s.leetcodeSolved        || 0) * 10 +
+    Math.floor((s.codeforcesRating  || 0) / 10) +
+    (s.githubContributions   || 0) * 2
+  );
 });
 
 userSchema.set('toJSON', { virtuals: true });

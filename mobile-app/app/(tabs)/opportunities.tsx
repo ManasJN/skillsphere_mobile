@@ -3,7 +3,7 @@
  *
  * Three sections in one scroll:
  *   1. Upcoming  — CIE reminders (static defaults) + college events (live)
- *   2. From your college — announcements (live, verified students only)
+ *   2. Faculty Announcements — shared ecosystem announcements from GET /api/announcements
  *   3. Opportunities — filtered, searchable list (existing functionality preserved)
  *
  * Design rules followed:
@@ -28,7 +28,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { collegesAPI, opportunitiesAPI } from '@/lib/api';
+import { announcementsAPI, collegesAPI, opportunitiesAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Spacing, Typography } from '@/lib/theme';
 import {
   Badge, BadgeColor, Card, Divider, EmptyState,
@@ -49,9 +49,14 @@ type CollegeEvent = {
   startsAt?: string; endsAt?: string; location?: string;
 };
 
-type CollegeAnnouncement = {
-  _id: string; title?: string; body?: string; department?: string;
-  createdAt?: string; postedBy?: { name?: string };
+// Shared ecosystem announcement (posted by faculty, visible to all students)
+type SharedAnnouncement = {
+  _id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  createdAt?: string;
+  createdBy?: { name?: string };
 };
 
 // ─── Static CIE reminders ─────────────────────────────────────────────────────
@@ -153,7 +158,7 @@ export default function ExploreScreen() {
 
   // College feed state
   const [events,      setEvents]     = useState<CollegeEvent[]>([]);
-  const [announces,   setAnnounces]  = useState<CollegeAnnouncement[]>([]);
+  const [announces,   setAnnounces]  = useState<SharedAnnouncement[]>([]);
   const [feedLoading, setFeedLoading]= useState(true);
   const [dismissed,   setDismissed]  = useState<Set<string>>(new Set());
 
@@ -175,10 +180,14 @@ export default function ExploreScreen() {
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await collegesAPI.studentUpdates();
-      setEvents(res.data.events ?? []);
-      setAnnounces(res.data.announcements ?? []);
-    } catch { /* silent — not all students are verified */ }
+      // Load college events (existing)
+      const eventsRes = await collegesAPI.studentUpdates().catch(() => ({ data: { events: [] } }));
+      setEvents(eventsRes.data.events ?? []);
+
+      // Load shared ecosystem announcements from faculty
+      const annRes = await announcementsAPI.getAll({ limit: '10' });
+      setAnnounces(annRes.data.data ?? []);
+    } catch { /* silent */ }
     finally { setFeedLoading(false); }
   }, []);
 
@@ -278,7 +287,7 @@ export default function ExploreScreen() {
           onDismissEvent={dismiss}
         />
 
-        {/* ── 2. College announcements (verified students) ── */}
+        {/* ── 2. Faculty Announcements (shared ecosystem) ── */}
         {(visibleAnnounces.length > 0 || (!feedLoading && announces.length > 0)) && (
           <AnnouncementsSection
             items={visibleAnnounces}
@@ -464,19 +473,39 @@ const rS = StyleSheet.create({
   urgencyTxt: { ...Typography.bodyXs, fontWeight: '600' as const },
 });
 
-// ─── Announcements Section ────────────────────────────────────────────────────
+// ─── Shared Announcements Section ────────────────────────────────────────────
+
+// Category meta for student view (mirrors faculty side)
+const STUDENT_CAT_META: Record<string, { icon: string; color: string; bg: string }> = {
+  Academic:   { icon: 'school-outline',    color: Colors.accent,      bg: Colors.accentDim },
+  Internship: { icon: 'briefcase-outline', color: Colors.success,     bg: Colors.status.successBg },
+  Event:      { icon: 'calendar-outline',  color: Colors.warning,     bg: Colors.status.warningBg },
+  Hackathon:  { icon: 'trophy-outline',    color: Colors.accentLight, bg: Colors.accentDim },
+  Workshop:   { icon: 'bulb-outline',      color: Colors.success,     bg: Colors.status.successBg },
+  General:    { icon: 'megaphone-outline', color: Colors.text2,       bg: Colors.bg3 },
+};
+
+function getStudentCat(key?: string) {
+  return STUDENT_CAT_META[key ?? 'General'] ?? STUDENT_CAT_META['General'];
+}
 
 function AnnouncementsSection({
   items, onDismiss,
 }: {
-  items: CollegeAnnouncement[];
+  items: SharedAnnouncement[];
   onDismiss: (id: string) => void;
 }) {
   if (items.length === 0) return null;
 
   return (
     <View style={S.section}>
-      <Text style={S.sectionLabel}>From your college</Text>
+      <View style={aS.sectionHeader}>
+        <Text style={S.sectionLabel}>From Faculty</Text>
+        <View style={aS.ecosystemBadge}>
+          <Ionicons name="globe-outline" size={9} color={Colors.success} />
+          <Text style={aS.ecosystemText}>Shared</Text>
+        </View>
+      </View>
       <View style={aS.listCard}>
         {items.map((a, i) => (
           <View key={a._id}>
@@ -492,41 +521,49 @@ function AnnouncementsSection({
 function AnnouncementRow({
   item, onDismiss,
 }: {
-  item: CollegeAnnouncement;
+  item: SharedAnnouncement;
   onDismiss: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const cat = getStudentCat(item.category);
+  const authorName = item.createdBy?.name ?? 'Faculty';
 
   return (
     <Pressable
       onPress={() => setExpanded(v => !v)}
       style={({ pressed }) => [aS.row, pressed && aS.rowPressed]}>
       <View style={aS.rowBody}>
+        {/* Top row: category tag + time + dismiss */}
         <Row style={aS.rowTop}>
-          <Text style={aS.rowTitle} numberOfLines={expanded ? undefined : 1}>
-            {item.title}
-          </Text>
-          <Row style={{ gap: 6 }}>
-            {item.createdAt && (
-              <Text style={aS.rowTime}>{relativeTime(item.createdAt)}</Text>
-            )}
-            <Pressable onPress={onDismiss} hitSlop={10}>
-              <Ionicons name="close" size={13} color={Colors.text3} />
-            </Pressable>
-          </Row>
+          <View style={[aS.catTag, { backgroundColor: cat.bg }]}>
+            <Ionicons name={cat.icon as any} size={10} color={cat.color} />
+            <Text style={[aS.catTagText, { color: cat.color }]}>
+              {item.category ?? 'General'}
+            </Text>
+          </View>
+          <View style={{ flex: 1 }} />
+          {item.createdAt && (
+            <Text style={aS.rowTime}>{relativeTime(item.createdAt)}</Text>
+          )}
+          <Pressable onPress={onDismiss} hitSlop={10}>
+            <Ionicons name="close" size={13} color={Colors.text3} />
+          </Pressable>
         </Row>
 
-        {expanded && item.body ? (
-          <Text style={aS.rowBody2}>{item.body}</Text>
+        {/* Title */}
+        <Text style={aS.rowTitle} numberOfLines={expanded ? undefined : 2}>
+          {item.title}
+        </Text>
+
+        {/* Body on expand */}
+        {expanded && item.description ? (
+          <Text style={aS.rowBody2}>{item.description}</Text>
         ) : null}
 
+        {/* Footer: author */}
         <Row style={aS.rowMeta}>
-          {item.postedBy?.name && (
-            <Text style={aS.rowPoster}>{item.postedBy.name}</Text>
-          )}
-          {item.department ? (
-            <Badge label={item.department} color="muted" />
-          ) : null}
+          <Ionicons name="person-circle-outline" size={11} color={Colors.text4} />
+          <Text style={aS.rowPoster}>{authorName}</Text>
         </Row>
       </View>
     </Pressable>
@@ -534,6 +571,19 @@ function AnnouncementRow({
 }
 
 const aS = StyleSheet.create({
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  ecosystemBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: Colors.status.successBg,
+    borderColor: Colors.status.successBorder, borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: 6, paddingVertical: 2,
+  },
+  ecosystemText: {
+    fontSize: 9, fontWeight: '600' as const, color: Colors.success,
+  },
   listCard: {
     backgroundColor: Colors.bg2,
     borderColor: Colors.border1,
@@ -543,12 +593,18 @@ const aS = StyleSheet.create({
   },
   row:        { padding: Spacing.md },
   rowPressed: { backgroundColor: Colors.bg3 },
-  rowBody:    { gap: 6 },
-  rowTop:     { gap: 8, justifyContent: 'space-between', alignItems: 'flex-start' },
-  rowTitle:   { ...Typography.h4, color: Colors.text0, flex: 1 },
+  rowBody:    { gap: 7 },
+  rowTop:     { gap: 6, justifyContent: 'space-between', alignItems: 'center' },
+  catTag: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderRadius: Radius.xs,
+    paddingHorizontal: 6, paddingVertical: 3,
+  },
+  catTagText: { fontSize: 10, fontWeight: '600' as const },
+  rowTitle:   { ...Typography.h4, color: Colors.text0 },
   rowTime:    { ...Typography.bodyXs, color: Colors.text3 },
   rowBody2:   { ...Typography.bodySm, color: Colors.text2, lineHeight: 20 },
-  rowMeta:    { gap: 8, flexWrap: 'wrap', alignItems: 'center' },
+  rowMeta:    { gap: 5, alignItems: 'center' },
   rowPoster:  { ...Typography.bodyXs, color: Colors.text3 },
 });
 
