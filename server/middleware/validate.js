@@ -26,7 +26,10 @@ const registerRules = [
 ];
 
 const loginRules = [
-  body('email').isEmail().withMessage('Valid email required').normalizeEmail(),
+  body('identifier')
+    .trim()
+    .notEmpty()
+    .withMessage('Email, username, or roll number is required'),
   body('password').notEmpty().withMessage('Password is required'),
 ];
 

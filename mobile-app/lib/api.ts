@@ -91,13 +91,18 @@ export const authAPI = {
     meCacheValue = res;
     return meCacheValue;
   },
-  login: (email: string, password: string) => {
+  // TASK 1: sends `identifier` (email or roll number) — backend detects type.
+  login: (identifier: string, password: string) => {
+    const payload = { identifier: identifier.trim(), password };
     if (__DEV__) {
-      console.log('[authAPI] login payload', { email, password });
+      console.log('[authAPI] login payload', {
+        identifier: payload.identifier,
+        passwordPresent: Boolean(payload.password),
+      });
     }
     _isLoggingOut = false;
     clearMeCache();
-    return api.post('/auth/login', { email, password });
+    return api.post('/auth/login', payload);
   },
   register: (name: string, email: string, password: string, role: string) => {
     const serverRole = role;

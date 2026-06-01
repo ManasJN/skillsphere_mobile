@@ -217,14 +217,22 @@ const verifyOtp = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { password } = req.body;
-    const email = (req.body.email || '').trim().toLowerCase();
+    // Accept `identifier` (new multi-login field) OR legacy `email` field.
+    const raw        = (req.body.identifier || req.body.email || '').trim();
+    const isEmail    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+    const identifier = isEmail ? raw.toLowerCase() : raw;
 
-    const user = await User.findOne({ email }).select('+password');
+    // Build the query: email match OR roll number match (case-insensitive).
+    const query = isEmail
+      ? { email: identifier }
+      : { rollNumber: { $regex: `^${identifier}$`, $options: 'i' } };
+
+    const user = await User.findOne(query).select('+password');
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials — check your email / roll number and password'
       });
     }
 
@@ -239,7 +247,7 @@ const login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials — check your email / roll number and password'
       });
     }
 
