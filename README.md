@@ -1,147 +1,144 @@
-# SkillSphere — Minimal Developer Identity & Portfolio
+# SkillSphere
 
 [License: MIT](LICENSE)
 
-A minimalist developer/student identity and portfolio platform focused on professional identity, GitHub integration, achievement progression, verification, and shareable portfolios (including QR-based profile sharing).
+SkillSphere is a student growth and faculty engagement platform built for campus communities, with an initial design focus on Jorhat Engineering College (JEC). The system combines a React Native + Expo mobile client with a Node.js + Express backend and MongoDB data storage.
 
-**Quick facts**
-- Mobile app: Expo + React Native (TypeScript)
-- Backend: Node.js, Express, MongoDB
-- Intent: small, reliable, portfolio-first experience for developers and students
-- Role support: `student`, `faculty`, and `admin`; faculty users route to a dedicated faculty tab navigator
+The repository is split into:
+- `mobile-app/` — the Expo mobile application with TypeScript and Expo Router
+- `server/` — the REST API, authentication, role-based access control, and data models
 
 ---
 
-**Project introduction**
+# Key Features
 
-SkillSphere provides a compact, mobile-first way to present a developer identity: verified accomplishments, GitHub-connected activity, an ordered professional timeline, and a shareable portfolio view that can be delivered via link or QR code.
+## Student Features
 
-**Product vision**
+- Authentication with OTP verification and JWT session handling
+- Student profile and portfolio system for academic and coding credentials
+- QR-based profile sharing for quick access and presentations
+- GitHub integration for importing public profile data and repository stats
+- LeetCode statistics support for coding progress and achievement tracking
+- Leaderboard and ranking system based on coding and portfolio metrics
+- Goals and achievements tracking with configurable student milestones
+- Opportunities and announcements feed for campus updates
 
-Deliver a dependable, low-friction portfolio for individuals who want a clean, developer-focused presence. The app prioritizes clarity, verifiable signals, and an exportable/shareable portfolio while keeping the UI intentionally minimal.
+## Faculty Features
 
----
-
-**Core features**
-
-- GitHub integration for importing public activity and basic profile data.
-- Professional timeline: chronological display of projects, achievements and milestones.
-- Verification system for vetted credentials and campus access flows.
-- Portfolio preview and share mode for public-facing presentation.
-- QR-based profile sharing for in-person quick exchange.
-- Lightweight, handcrafted UI components focused on readability and clarity.
-
----
-
-**Screens / feature overview**
-
-- Onboarding & verification: simple email + OTP flow, role selection.
-- Dashboard: XP/achievement summary and active goals.
-- Goals & milestones: progress tracking and lightweight XP rewards.
-- Timeline / Portfolio: professional timeline and portfolio preview mode.
-- Share: generate a shareable portfolio link and QR for quick sharing.
-- Explore & opportunities: curated listings and college-specific announcements (for verified users).
+- Faculty login with role-based access control
+- Faculty dashboard for student monitoring and aggregate progress
+- Read-only student visibility and portfolio inspection
+- Shared announcement system for campus-wide messaging
+- Faculty announcement publishing and admin visibility in the backend
 
 ---
 
-**Tech stack**
+# Tech Stack
 
-- Mobile: Expo, React Native, Expo Router, TypeScript
-- Backend: Node.js, Express, MongoDB, Mongoose
-- Networking: Axios (centralized client + auth interceptor)
-- Storage: AsyncStorage (mobile) and JWT-based auth
-- Dev tooling: ESLint, TypeScript
+## Frontend
 
----
+- React Native
+- Expo
+- Expo Router
+- TypeScript
 
-**Architecture highlights**
+## Backend
 
-- `server/` — Express API, controllers, middleware, and Mongoose models.
-- `mobile-app/` — Expo application using file-based routing under `app/`.
-- `mobile-app/lib/` — API client, configuration, and small utilities (QR helper, theme, etc.).
-- `mobile-app/components/` — focused, reusable UI primitives; portfolio and share screens live here.
-
-This structure keeps the mobile client lightweight and keeps business logic in hooks (`mobile-app/hooks/`).
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
 
 ---
 
-**Setup & installation**
+# Architecture Overview
 
-Prerequisites:
-- Node.js 18+ and npm or Yarn
-- A MongoDB instance (local or Atlas)
-- Recommended: Expo Go on your device or a simulator
+- Role-based routing: the mobile client identifies `student` and `faculty` roles and routes users to separate tab navigators and dashboard flows.
+- Student and faculty dashboards: students see progress, goals, and portfolio entry points; faculty users access student summaries, details, and announcement controls.
+- Shared announcements architecture: announcements are stored in MongoDB, exposed via `/api/announcements`, and rendered for authenticated users across the student and faculty experience.
+- Portfolio ecosystem: portfolio data is assembled from user profile fields, skills, projects, coding stats, and share links, then delivered via QR and deep link sharing.
 
-Backend
+---
+
+# Screenshots Section
+
+## Login Screen
+(Add screenshot here)
+
+## Student Dashboard
+(Add screenshot here)
+
+## Faculty Dashboard
+(Add screenshot here)
+
+## Portfolio Screen
+(Add screenshot here)
+
+---
+
+# Installation
+
+## Prerequisites
+
+- Node.js 18+ and npm
+- MongoDB instance (local or Atlas)
+- Expo CLI installed or use `npx expo`
+
+## Backend setup
+
 ```bash
 cd server
 npm install
 cp .env.example .env
-# Edit server/.env to set MONGO_URI, JWT secrets, and email credentials
+# Edit server/.env to set MONGO_URI, JWT_SECRET, JWT_REFRESH_SECRET, EMAIL_USER and EMAIL_PASS
 npm run dev
 ```
 
-Mobile app
+## Mobile app setup
+
 ```bash
 cd mobile-app
 npm install
 cp .env.example .env
-# Edit mobile-app/.env: set EXPO_PUBLIC_API_URL to the API base URL (including /api)
+# Edit mobile-app/.env and set EXPO_PUBLIC_API_URL to the backend API base URL
 npx expo start
 ```
 
-Network note: when running the mobile client on a device, point `EXPO_PUBLIC_API_URL` to your machine on the local network (e.g. `http://192.168.1.42:5000/api`).
+## Notes
+
+- On a physical device, set `EXPO_PUBLIC_API_URL` to your machine’s local network address (for example `http://192.168.x.x:5000/api`).
+- The mobile client and backend are separate projects and should be started independently.
 
 ---
 
-**Environment configuration**
+# Project Status
 
-Key variables (examples)
+Current Status:
+- Demo-ready prototype
 
-- `server/.env`
-  - `PORT` — server port (default 5000)
-  - `MONGO_URI` — MongoDB connection string
-  - `JWT_SECRET`, `JWT_REFRESH_SECRET` — authentication secrets
-  - `EMAIL_USER`, `EMAIL_PASS` — SMTP sender credentials (OTP/email)
+Implemented:
+- student ecosystem with profile, goals, and portfolio features
+- faculty ecosystem with role-based access and student visibility
+- shared announcements for campus messaging
+- OTP-based authentication and session management
+- portfolio system with shareable links and QR codes
+- leaderboard and coding progress tracking
 
-- `mobile-app/.env`
-  - `EXPO_PUBLIC_API_URL` — backend API URL used by the mobile client
-
-The codebase includes fallback defaults in `mobile-app/lib/config.ts` to simplify local development.
-
----
-
-**Screenshots (placeholders)**
-
-Add high-quality screenshots to `mobile-app/assets/screenshots/` and replace the placeholders below:
-
-- `mobile-app/assets/screenshots/dashboard.png` — dashboard and achievements
-- `mobile-app/assets/screenshots/timeline.png` — portfolio/timeline preview
-- `mobile-app/assets/screenshots/share-qr.png` — share screen with QR
-
-Recommended image sizes: 1080×2340 (vertical) and 1200×630 (wide preview).
+Future Scope:
+- faculty verification workflow
+- multi-college support and campus separation
+- advanced analytics and dashboard reporting
+- push notifications and richer notification delivery
 
 ---
 
-**Roadmap (short, realistic items)**
+# Team / Author
 
-- Improve offline resilience and caching for timeline and portfolio.
-- Add background sync for GitHub imports and verification status.
-- Small UX polish: export PDF of portfolio, print-friendly versions.
-- Optional: native sharing extensions for deeper OS integration.
+- Manas Jyoti Nath
 
 ---
 
-**Contribution**
+**Repository structure**
 
-1. Fork the repo and create a feature branch.
-2. Run both `server` and `mobile-app` locally and reproduce the issue or feature.
-3. Open a PR with a clear description and screenshots for UI changes.
-
-Please keep changes focused and testable — the codebase is intentionally small and opinionated.
-
----
-
-**License**
-
-This project is open source under the MIT License.
+- `mobile-app/` — Expo mobile app, UI components, hooks, and API client
+- `server/` — Express API, controllers, routes, models, and backend services
