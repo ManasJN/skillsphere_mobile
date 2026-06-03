@@ -6,31 +6,44 @@
  * Expo Router's type system knows about them.
  */
 
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack }        from 'expo-router';
 import { StatusBar }    from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Colors } from '@/lib/theme';
-
-const theme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background:   Colors.bg1,
-    card:         Colors.bg2,
-    border:       Colors.border1,
-    primary:      Colors.accent,
-    notification: Colors.warning,
-    text:         Colors.text0,
-  },
-};
+import { AppThemeProvider, Colors, useAppTheme } from '@/lib/theme';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={theme}>
+      <AppThemeProvider>
+        <RootNavigator />
+      </AppThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function RootNavigator() {
+  const { isDark, mode } = useAppTheme();
+  const baseTheme = isDark ? DarkTheme : DefaultTheme;
+  const theme = {
+    ...baseTheme,
+    dark: isDark,
+    colors: {
+      ...baseTheme.colors,
+      background:   Colors.bg1,
+      card:         Colors.bg2,
+      border:       Colors.border1,
+      primary:      Colors.accent,
+      notification: Colors.warning,
+      text:         Colors.text0,
+    },
+  };
+
+  return (
+      <NavigationThemeProvider value={theme}>
         <Stack
+          key={mode}
           screenOptions={{
             headerShown: false,
             animation: 'fade',
@@ -54,8 +67,7 @@ export default function RootLayout() {
           <Stack.Screen name="portfolio"       options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="share"           options={{ animation: 'slide_from_bottom' }} />
         </Stack>
-        <StatusBar style="light" backgroundColor={Colors.bg1} />
-      </ThemeProvider>
-    </SafeAreaProvider>
+        <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={Colors.bg1} />
+      </NavigationThemeProvider>
   );
 }

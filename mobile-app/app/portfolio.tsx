@@ -358,7 +358,7 @@ export default function PortfolioScreen() {
             <Ionicons name="person-outline" size={32} color={Colors.text4} />
             <Text style={S.emptyTitle}>Profile in progress</Text>
             <Text style={S.emptyBody}>
-              This student hasn't added skills, projects, or timeline entries yet.
+              This student hasn&apos;t added skills, projects, or timeline entries yet.
             </Text>
           </View>
         )}

@@ -48,6 +48,7 @@ const TAB_ICON_SIZE = Control.tabIcon;
 const TAB_ICON_BOX = Control.tabIconBox;
 
 export default function TabLayout() {
+  const insets     = useSafeAreaInsets();
   // FIX: Role guard — if a faculty user somehow reaches (tabs), redirect them
   // back to faculty tabs. This is a safety net for Expo Router stack replays.
   const [role, setRole] = useState<string | null>(null);
@@ -67,7 +68,6 @@ export default function TabLayout() {
     return <Redirect href="/(faculty-tabs)/dashboard" />;
   }
 
-  const insets     = useSafeAreaInsets();
   // Safe inset floor: 0 on devices with hardware buttons (insets.bottom === 0),
   // actual value on gesture-nav devices (typically 34pt iOS, 16-48dp Android).
   const safeBottom = insets.bottom;

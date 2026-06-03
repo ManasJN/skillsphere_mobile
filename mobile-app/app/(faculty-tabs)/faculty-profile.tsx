@@ -17,6 +17,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -25,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
 import {
   Colors, Layout, NAV_BOTTOM_OFFSET, Radius,
-  Spacing, Surface, Typography,
+  Spacing, Surface, Typography, useAppTheme,
 } from '@/lib/theme';
 import { Row } from '@/components/ui';
 
@@ -60,6 +61,7 @@ type FacultyUser = {
 };
 
 export default function FacultyProfileScreen() {
+  const { isDark, toggleTheme } = useAppTheme();
   const [user, setUser]         = useState<FacultyUser | null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,6 +175,23 @@ export default function FacultyProfileScreen() {
         {/* Platform info */}
         <Text style={S.sectionTitle}>Platform</Text>
         <View style={S.card}>
+          <Row style={S.infoRow}>
+            <View style={S.infoIconWrap}>
+              <Ionicons name={isDark ? 'moon-outline' : 'sunny-outline'} size={16} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={S.infoLabel}>Appearance</Text>
+              <Text style={S.infoValue}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+            </View>
+            <Switch
+              value={!isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: Colors.border2, true: Colors.accentMid }}
+              thumbColor={isDark ? Colors.text2 : Colors.accent}
+              ios_backgroundColor={Colors.border2}
+            />
+          </Row>
+          <View style={S.divider} />
           <Row style={S.infoRow}>
             <View style={S.infoIconWrap}>
               <Ionicons name="shield-checkmark-outline" size={16} color={Colors.accent} />

@@ -178,26 +178,26 @@ export function Badge({ label, color = 'muted', style }: BadgeProps) {
 
 // Muted, naturalistic badge tones — no neon
 const badgeBg: Record<BadgeColor, ViewStyle> = {
-  teal:   { backgroundColor: '#0C1F26', borderColor: '#1A3D4A' },
-  indigo: { backgroundColor: '#13152A', borderColor: '#252854' },
-  amber:  { backgroundColor: '#1E1600', borderColor: '#3D2E00' },
-  red:    { backgroundColor: '#1E0A0A', borderColor: '#3D1414' },
-  green:  { backgroundColor: '#0A1A12', borderColor: '#163324' },
+  teal:   { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  indigo: { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  amber:  { backgroundColor: Colors.status.warningBg, borderColor: Colors.status.warningBorder },
+  red:    { backgroundColor: Colors.status.dangerBg, borderColor: Colors.status.dangerBorder },
+  green:  { backgroundColor: Colors.status.successBg, borderColor: Colors.status.successBorder },
   muted:  { backgroundColor: Colors.bg4, borderColor: Colors.border1 },
-  blue:   { backgroundColor: '#0C1826', borderColor: '#1A3048' },
-  pink:   { backgroundColor: '#1A0A16', borderColor: '#381426' },
-  orange: { backgroundColor: '#1A0E00', borderColor: '#382000' },
+  blue:   { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  pink:   { backgroundColor: Colors.accentDim, borderColor: Colors.accentMid },
+  orange: { backgroundColor: Colors.status.warningBg, borderColor: Colors.status.warningBorder },
 };
 const badgeFg: Record<BadgeColor, TextStyle> = {
-  teal:   { color: '#6EC8D4' },
-  indigo: { color: '#9B9FDC' },
-  amber:  { color: '#CCA042' },
-  red:    { color: '#C87070' },
-  green:  { color: '#5FAE80' },
+  teal:   { color: Colors.accentLight },
+  indigo: { color: Colors.accentLight },
+  amber:  { color: Colors.warning },
+  red:    { color: Colors.danger },
+  green:  { color: Colors.success },
   muted:  { color: Colors.text2 },
   blue:   { color: Colors.accentLight },
-  pink:   { color: '#C47AB0' },
-  orange: { color: '#C8906A' },
+  pink:   { color: Colors.accentLight },
+  orange: { color: Colors.warning },
 };
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────

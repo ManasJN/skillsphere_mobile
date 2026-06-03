@@ -7,14 +7,14 @@ import {
   Alert,
   Animated,
   Pressable, RefreshControl, ScrollView,
-  StyleSheet, Text, View,
+  StyleSheet, Switch, Text, View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TOKEN_STORAGE_KEY, authAPI, setLoggingOut as setLoggingOut_api, clearMeCache, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
-import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Surface, Typography } from '@/lib/theme';
+import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Surface, Typography, useAppTheme } from '@/lib/theme';
 import { Avatar, Badge, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
@@ -51,6 +51,7 @@ function statusBadge(s?: string): Parameters<typeof Badge>[0]['color'] {
 }
 
 export default function ProfileScreen() {
+  const { isDark, toggleTheme } = useAppTheme();
   const [user,     setUser]     = useState<User | null>(null);
   const [skills,   setSkills]   = useState<Skill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -273,6 +274,26 @@ export default function ProfileScreen() {
 
             {/* ── Academic Info ── */}
             <SectionBlock>
+              <Text style={S.sectionTitle}>Settings</Text>
+              <View style={S.settingRow}>
+                <View style={S.settingIconWrap}>
+                  <Ionicons name={isDark ? 'moon-outline' : 'sunny-outline'} size={16} color={Colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={S.settingTitle}>Appearance</Text>
+                  <Text style={S.settingSub}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+                </View>
+                <Switch
+                  value={!isDark}
+                  onValueChange={toggleTheme}
+                  trackColor={{ false: Colors.border2, true: Colors.accentMid }}
+                  thumbColor={isDark ? Colors.text2 : Colors.accent}
+                  ios_backgroundColor={Colors.border2}
+                />
+              </View>
+            </SectionBlock>
+
+            <SectionBlock>
               <Text style={S.sectionTitle}>Academic Details</Text>
               <Divider style={{ marginVertical: 8 }} />
               {[
@@ -474,7 +495,7 @@ export default function ProfileScreen() {
                       <View style={S.tabEmptyState}>
                         <Text style={S.tabEmptyTitle}>No skills tracked yet</Text>
                         <Text style={S.tabEmptyBody}>
-                          Add what you know and what you're learning — skills appear on your portfolio and improve your opportunity matches.
+                          Add what you know and what you&apos;re learning — skills appear on your portfolio and improve your opportunity matches.
                         </Text>
                         <Pressable onPress={openAddSkill} style={S.tabEmptyAction}>
                           <Ionicons name="add" size={13} color={Colors.accent} />
@@ -524,7 +545,7 @@ export default function ProfileScreen() {
                     <View style={S.tabEmptyState}>
                       <Text style={S.tabEmptyTitle}>No projects added yet</Text>
                       <Text style={S.tabEmptyBody}>
-                        Projects are the strongest signal on your portfolio. Add what you've built — personal, academic, or open source.
+                        Projects are the strongest signal on your portfolio. Add what you&apos;ve built — personal, academic, or open source.
                       </Text>
                     </View>
                   )
@@ -724,6 +745,28 @@ const S = StyleSheet.create({
     paddingTop: 16,
   },
   sectionTitle: { ...Typography.h3, color: Colors.text0 },
+  settingRow: {
+    alignItems: 'center',
+    backgroundColor: Colors.bg2,
+    borderColor: Colors.border1,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+  },
+  settingIconWrap: {
+    alignItems: 'center',
+    backgroundColor: Colors.accentDim,
+    borderColor: Colors.accentMid,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  settingTitle: { ...Typography.uiSm, color: Colors.text0 },
+  settingSub: { ...Typography.bodyXs, color: Colors.text3, marginTop: 1 },
   infoRow: { justifyContent: 'space-between', paddingVertical: 5 },
   infoLbl: { ...Typography.bodySm, color: Colors.text3, fontWeight: '600' as const },
   infoVal: { ...Typography.bodySm, color: Colors.text1, fontWeight: '600' as const, maxWidth: '55%', textAlign: 'right' as const },
