@@ -23,11 +23,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TOKEN_STORAGE_KEY, authAPI } from '@/lib/api';
+import { TOKEN_STORAGE_KEY, authAPI, clearMeCache, usersAPI } from '@/lib/api';
 import {
   Colors, Layout, NAV_BOTTOM_OFFSET, Radius,
   Spacing, Surface, Typography, useAppTheme,
 } from '@/lib/theme';
+import { ProfileAvatarPicker } from '@/components/ProfileAvatarPicker';
 import { Row } from '@/components/ui';
 
 // ─── Info row ─────────────────────────────────────────────────────────────────
@@ -50,9 +51,11 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value?: 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 type FacultyUser = {
+  _id?: string;
   name: string;
   email: string;
   role: string;
+  avatar?: string;
   college?: string;
   collegeId?: { collegeName?: string; domain?: string };
   department?: string;
@@ -67,6 +70,7 @@ export default function FacultyProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError]       = useState('');
+  const [avatarSaving, setAvatarSaving] = useState(false);
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true); else setLoading(true);
@@ -106,6 +110,25 @@ export default function FacultyProfileScreen() {
     );
   }, []);
 
+  const handleAvatarChange = useCallback(async (avatar: string | null) => {
+    if (!user?._id) return;
+    const previous = user;
+    const nextAvatar = avatar ?? '';
+
+    setAvatarSaving(true);
+    setUser(prev => prev ? { ...prev, avatar: nextAvatar } : prev);
+    try {
+      const res = await usersAPI.update(user._id, { avatar: nextAvatar });
+      clearMeCache();
+      setUser(res.data?.data ?? previous);
+    } catch {
+      setUser(previous);
+      Alert.alert('Profile picture', 'Could not save your profile picture. Please try again.');
+    } finally {
+      setAvatarSaving(false);
+    }
+  }, [user]);
+
   const collegeName = user?.collegeId?.collegeName ?? user?.college ?? '—';
   const domain      = user?.collegeId?.domain;
   const joined      = user?.createdAt
@@ -126,9 +149,13 @@ export default function FacultyProfileScreen() {
 
         {/* Hero */}
         <View style={S.hero}>
-          <View style={S.avatarWrap}>
-            <Text style={S.avatarText}>{initials}</Text>
-          </View>
+          <ProfileAvatarPicker
+            avatar={user?.avatar}
+            initials={initials}
+            onChange={handleAvatarChange}
+            saving={avatarSaving}
+            size={80}
+          />
           <Text style={S.name}>{user?.name ?? (loading ? '…' : '—')}</Text>
           <Text style={S.college}>{collegeName}</Text>
 

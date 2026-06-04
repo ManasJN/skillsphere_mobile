@@ -7,7 +7,7 @@ export type User = {
   cgpa?: number | string; xpPoints?: number; level?: number;
   streakDays?: number; batch?: string; verificationStatus?: string;
   college?: string; collegeId?: { collegeName?: string }; section?: string;
-  aspiration?: string; bio?: string; phone?: string;
+  aspiration?: string; bio?: string; phone?: string; avatar?: string;
   codingStats?: Record<string, number>; socialLinks?: Record<string, string>;
   platformProfiles?: Record<string, string> & { github?: string };
 };

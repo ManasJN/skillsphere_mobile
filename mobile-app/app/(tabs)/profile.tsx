@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TOKEN_STORAGE_KEY, authAPI, setLoggingOut as setLoggingOut_api, clearMeCache, skillsAPI, projectsAPI, achievementsAPI } from '@/lib/api';
+import { TOKEN_STORAGE_KEY, authAPI, setLoggingOut as setLoggingOut_api, clearMeCache, skillsAPI, projectsAPI, achievementsAPI, usersAPI } from '@/lib/api';
 import { Colors, NAV_BOTTOM_OFFSET, Radius, Shadow, Surface, Typography, useAppTheme } from '@/lib/theme';
-import { Avatar, Badge, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
+import { Badge, Divider, EmptyState, ErrorBanner, ProgressBar, Row, Skeleton, StatChip } from '@/components/ui';
 import { getInitials, levelFromXP, xpProgress, type User } from '@/hooks/useUser';
 import { AchievementsRow } from '@/components/AchievementsRow';
+import { ProfileAvatarPicker } from '@/components/ProfileAvatarPicker';
 import { SkillSheet }           from '@/components/SkillSheet';
 import { CodingProfileSheet } from '@/components/CodingProfileSheet';
 import { GitHubCard }     from '@/components/GitHubCard';
@@ -69,6 +70,7 @@ export default function ProfileScreen() {
   const [timelineSheet,    setTimelineSheet]    = useState(false);
   const [editingEntry,     setEditingEntry]     = useState<TimelineEntry | null>(null);
   const [tlCategoryFilter, setTlCategoryFilter] = useState<'all' | keyof typeof CATEGORY_CONFIG>('all');
+  const [avatarSaving, setAvatarSaving] = useState(false);
 
   const {
     entries:    timelineEntries,
@@ -163,6 +165,25 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleAvatarChange = useCallback(async (avatar: string | null) => {
+    if (!user?._id) return;
+    const previous = user;
+    const nextAvatar = avatar ?? '';
+
+    setAvatarSaving(true);
+    setUser(prev => prev ? { ...prev, avatar: nextAvatar } : prev);
+    try {
+      const res = await usersAPI.update(user._id, { avatar: nextAvatar });
+      clearMeCache();
+      setUser(res.data?.data ?? previous);
+    } catch {
+      setUser(previous);
+      Alert.alert('Profile picture', 'Could not save your profile picture. Please try again.');
+    } finally {
+      setAvatarSaving(false);
+    }
+  }, [user]);
+
   const executeLogout = async () => {
     setLoggingOut(true);         // local UI state — disables the button
     setLoggingOut_api(true);     // module-level flag — suppresses 401 interceptor re-navigation
@@ -229,7 +250,13 @@ export default function ProfileScreen() {
             {/* ── Identity Hero Card ── */}
             <View style={S.heroCard}>
               <Row style={S.heroTop}>
-                <Avatar initials={getInitials(user?.name)} size={68} />
+                <ProfileAvatarPicker
+                  avatar={user?.avatar}
+                  initials={getInitials(user?.name)}
+                  onChange={handleAvatarChange}
+                  saving={avatarSaving}
+                  size={68}
+                />
                 <View style={S.heroCopy}>
                   <Text style={S.heroName}>{user?.name ?? 'Student'}</Text>
                   <Text style={S.heroEmail}>{user?.email}</Text>
