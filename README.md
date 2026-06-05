@@ -101,13 +101,14 @@ cd mobile-app
 npm install
 cp .env.example .env
 # Edit mobile-app/.env and set EXPO_PUBLIC_API_URL to the backend API base URL
-npx expo start
+npm run start
 ```
 
 ## Notes
 
-- On a physical device, set `EXPO_PUBLIC_API_URL` to your machine’s local network address (for example `http://192.168.x.x:5000/api`).
+- On a physical device, set `EXPO_PUBLIC_API_URL` to your machine’s local network address, for example `http://192.168.x.x:5000/api`.
 - The mobile client and backend are separate projects and should be started independently.
+- The Expo app uses `expo-router` and expects the backend API to be running before signing in.
 
 ---
 

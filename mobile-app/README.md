@@ -1,50 +1,46 @@
-# Welcome to your Expo app 👋
+# SkillSphere Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This folder contains the Expo mobile client for SkillSphere, built with React Native, TypeScript, and Expo Router.
 
-## Get started
+The app supports student growth tracking, goal management, portfolio sharing, QR profile sharing, and faculty engagement with role-based navigation.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Quick start
 
 ```bash
-npm run reset-project
+cd mobile-app
+npm install
+cp .env.example .env
+# Update EXPO_PUBLIC_API_URL to the backend API base URL, for example http://localhost:5000/api
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Available scripts
 
-## Learn more
+- `npm run start` — start Expo in development mode
+- `npm run android` — open the app in an Android device or emulator
+- `npm run ios` — open the app in an iOS simulator
+- `npm run web` — open the app in a browser
+- `npm run lint` — run Expo ESLint checks
 
-To learn more about developing your project with Expo, look at the following resources:
+## Environment variables
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Copy `mobile-app/.env.example` to `mobile-app/.env` and set:
 
-## Join the community
+- `EXPO_PUBLIC_API_URL` — backend API URL, for example `http://localhost:5000/api`
 
-Join our community of developers creating universal apps.
+## Notes
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- The mobile app communicates with the backend API for authentication, user profiles, announcements, goals, and portfolio data.
+- For physical device testing, use a local network address and ensure the backend is reachable from the device.
+- App source files are under `mobile-app/app` using Expo Router file-based routing.
+
+## Project structure
+
+- `app/` — page routes and screens
+- `components/` — reusable UI components
+- `hooks/` — custom React hooks
+- `lib/` — API client and helper modules
+
+## More information
+
+For full backend setup and repository-level instructions, see the root `README.md`.
