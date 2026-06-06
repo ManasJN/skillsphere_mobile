@@ -24,13 +24,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { usersAPI } from '@/lib/api';
 import { facultyAPI, type FacultyStudent } from '@/lib/faculty';
 import {
   Colors, Layout, NAV_BOTTOM_OFFSET, Radius,
-  Spacing, Surface, Typography,
+  Spacing, Typography,
 } from '@/lib/theme';
-import { assemblePortfolioData as buildPortfolioData } from '@/lib/portfolio';
 
 // ─── Verification badge chip ──────────────────────────────────────────────────
 
@@ -183,27 +181,14 @@ export default function StudentsScreen() {
     return [...list].sort((a, b) => (b.xpPoints ?? 0) - (a.xpPoints ?? 0));
   }, [all, query]);
 
-  // Open student portfolio — fetch full profile then pass to portfolio.tsx
-  const openPortfolio = useCallback(async (student: FacultyStudent) => {
-    try {
-      const res  = await usersAPI.getById(student._id);
-      const full = res.data?.data ?? res.data;
-      // buildPortfolioData expects more args in student-side helper; pass through raw
-      // profile as fallback to avoid signature mismatch here.
-      const pd   = full as any;
-      const b64  = btoa(unescape(encodeURIComponent(JSON.stringify(pd))));
-      router.push(`/portfolio?data=${b64}`);
-    } catch {
-      // Fallback: open with partial data
-      const pd  = student as any;
-      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(pd))));
-      router.push(`/portfolio?data=${b64}`);
-    }
+  // Open the dedicated read-only faculty detail screen.
+  const openStudent = useCallback((student: FacultyStudent) => {
+    router.push(`/faculty-student/${student._id}` as any);
   }, []);
 
   const renderItem = useCallback(({ item }: { item: FacultyStudent }) => (
-    <StudentCard student={item} onPress={() => openPortfolio(item)} />
-  ), [openPortfolio]);
+    <StudentCard student={item} onPress={() => openStudent(item)} />
+  ), [openStudent]);
 
   const keyExtractor = useCallback((item: FacultyStudent) => item._id, []);
 

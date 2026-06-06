@@ -62,6 +62,7 @@ function RootNavigator() {
 
           {/* Main app — faculty/college side */}
           <Stack.Screen name="(faculty-tabs)"  options={{ animation: 'none' }} />
+          <Stack.Screen name="faculty-student/[id]" options={{ animation: 'slide_from_right' }} />
 
           {/* Portfolio system */}
           <Stack.Screen name="portfolio"       options={{ animation: 'slide_from_bottom' }} />

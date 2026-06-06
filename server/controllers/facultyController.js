@@ -9,6 +9,10 @@
 
 const User         = require('../models/User');
 const Announcement = require('../models/Announcement');
+const Skill        = require('../models/Skill');
+const Project      = require('../models/Project');
+const Goal         = require('../models/Goal');
+const { UserAchievement } = require('../models/Achievement');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +73,31 @@ exports.getStudent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Student not found.' });
     }
 
-    return res.status(200).json({ success: true, data: student });
+    const [skills, projects, goals, achievements, studentsAhead] = await Promise.all([
+      Skill.find({ user: student._id }).sort('-level').lean(),
+      Project.find({ user: student._id }).sort('-createdAt').lean(),
+      Goal.find({ user: student._id }).sort('-createdAt').lean(),
+      UserAchievement.find({ user: student._id })
+        .populate('achievement')
+        .sort('-earnedAt')
+        .lean(),
+      User.countDocuments({
+        role: 'student',
+        xpPoints: { $gt: student.xpPoints || 0 },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...student,
+        skills,
+        projects,
+        goals,
+        achievements,
+        leaderboardRank: studentsAhead + 1,
+      },
+    });
   } catch (err) {
     console.error('[faculty] getStudent error:', err);
     return res.status(500).json({ success: false, message: 'Server error fetching student.' });

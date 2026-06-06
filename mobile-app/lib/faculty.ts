@@ -17,6 +17,7 @@ export type FacultyStudent = {
   _id: string;
   name: string;
   email: string;
+  avatar?: string;
   department?: string;
   semester?: number | string;
   rollNumber?: string;
@@ -25,11 +26,25 @@ export type FacultyStudent = {
   verificationStatus?: 'unsubmitted' | 'pending' | 'verified' | 'rejected';
   codingStats?: {
     leetcodeSolved?: number;
+    leetcodeEasy?: number;
+    leetcodeMedium?: number;
+    leetcodeHard?: number;
     githubRepos?: number;
     githubContributions?: number;
   };
   college?: string;
   batch?: string;
+  leaderboardRank?: number;
+  platformProfiles?: { github?: string; leetcode?: string };
+  skills?: { _id?: string; name?: string; category?: string; level?: number }[];
+  projects?: {
+    _id?: string; title?: string; description?: string; status?: string; techStack?: string[];
+  }[];
+  goals?: { _id?: string; title?: string; status?: string; progress?: number }[];
+  achievements?: {
+    _id?: string;
+    achievement?: { title?: string; icon?: string; rarity?: string; xpReward?: number } | null;
+  }[];
 };
 
 export type FacultyStats = {
