@@ -210,7 +210,7 @@ export default function StudentsScreen() {
         <Ionicons name="search-outline" size={16} color={Colors.text3} style={S.searchIcon} />
         <TextInput
           style={S.searchInput}
-          placeholder="Search name, department, roll no…"
+          placeholder="Search by name or roll number…"
           placeholderTextColor={Colors.text4}
           value={query}
           onChangeText={setQuery}
@@ -253,11 +253,11 @@ export default function StudentsScreen() {
             <View style={S.empty}>
               <Ionicons name="people-outline" size={32} color={Colors.text4} />
               <Text style={S.emptyTitle}>
-                {query ? 'No matches' : 'No students yet'}
+                {query ? 'No students found' : 'No students yet'}
               </Text>
               <Text style={S.emptyBody}>
                 {query
-                  ? 'Try a different name or department.'
+                  ? 'Try a different name or roll number.'
                   : 'No students have registered yet.'}
               </Text>
             </View>
