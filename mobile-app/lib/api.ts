@@ -104,13 +104,15 @@ export const authAPI = {
     clearMeCache();
     return api.post('/auth/login', payload);
   },
-  register: (name: string, email: string, password: string, role: string) => {
+  register: (name: string, email: string, password: string, role: string, facultyCode?: string) => {
     const serverRole = role;
+    const payload: Record<string, string> = { name, email, password, role: serverRole };
+    if (facultyCode) payload.facultyRegistrationCode = facultyCode;
     if (__DEV__) {
-      console.log('[authAPI] register payload', { name, email, password, role: serverRole });
+      console.log('[authAPI] register payload', { name, email, password, role: serverRole, facultyCodePresent: Boolean(facultyCode) });
     }
     clearMeCache();
-    return api.post('/auth/register', { name, email, password, role: serverRole });
+    return api.post('/auth/register', payload);
   },
   // FIX 3: verifyOtp MUST clear the meCache — the token just changed.
   // Without this, the old cached /auth/me response (wrong role or unauthenticated)

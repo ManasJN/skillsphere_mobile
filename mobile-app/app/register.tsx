@@ -23,12 +23,14 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [facultyCode, setFacultyCode] = useState('');
+  const [showFacultyCode, setShowFacultyCode] = useState(false);
   const [role, setRole] = useState<Role>('student');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
-    const validationError = validateForm(name, email, password);
+    const validationError = validateForm(name, email, password, role, facultyCode);
     if (validationError) {
       setError(validationError);
       return;
@@ -42,9 +44,16 @@ export default function RegisterScreen() {
           email: email.trim().toLowerCase(),
           password,
           role,
+          facultyCodePresent: role === 'faculty' ? Boolean(facultyCode) : 'n/a',
         });
       }
-      await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
+      await authAPI.register(
+        name.trim(),
+        email.trim().toLowerCase(),
+        password,
+        role,
+        role === 'faculty' ? facultyCode.trim() : undefined,
+      );
       router.push({ pathname: '/otp-verification', params: { email: email.trim().toLowerCase() } });
     } catch (err) {
       if (isAxiosError(err)) {
@@ -133,6 +142,22 @@ export default function RegisterScreen() {
               value={password}
             />
 
+            {role === 'faculty' && (
+              <Input
+                editable={!isLoading}
+                label="Faculty Registration Code"
+                onChangeText={setFacultyCode}
+                placeholder="Enter institution code"
+                rightElement={
+                  <Pressable hitSlop={12} onPress={() => setShowFacultyCode(p => !p)}>
+                    <Text style={styles.eyeText}>{showFacultyCode ? 'Hide' : 'Show'}</Text>
+                  </Pressable>
+                }
+                secureTextEntry={!showFacultyCode}
+                value={facultyCode}
+              />
+            )}
+
             {error ? <ErrorBanner message={error} /> : null}
 
             <Button
@@ -156,10 +181,11 @@ export default function RegisterScreen() {
   );
 }
 
-function validateForm(name: string, email: string, password: string) {
+function validateForm(name: string, email: string, password: string, role: Role, facultyCode: string) {
   if (name.trim().length < 2) return 'Please enter your full name.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address.';
   if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (role === 'faculty' && !facultyCode.trim()) return 'Faculty registration code is required.';
   return '';
 }
 

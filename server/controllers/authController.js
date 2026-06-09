@@ -25,10 +25,30 @@ const register = async (req, res, next) => {
       rollNumber,
       semester,
       role: requestedRole,
+      facultyRegistrationCode,
     } = req.body;
 
     const normalizedRole = ['faculty', 'college'].includes(requestedRole) ? 'faculty' : 'student';
     const verificationStatus = normalizedRole === 'faculty' ? 'pending' : 'unsubmitted';
+
+    // ── Faculty registration code guard ───────────────────────────────────────
+    if (normalizedRole === 'faculty') {
+      const expectedCode = process.env.FACULTY_REGISTRATION_CODE;
+      if (!expectedCode) {
+        console.error('[auth] FACULTY_REGISTRATION_CODE env variable is not set');
+        return res.status(500).json({
+          success: false,
+          message: 'Faculty registration is not configured. Contact the administrator.',
+        });
+      }
+      if (!facultyRegistrationCode || facultyRegistrationCode.trim() !== expectedCode.trim()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid faculty registration code',
+        });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Normalize email before lookup and save so casing never causes a mismatch
     const normalizedEmail = (email || '').trim().toLowerCase();
