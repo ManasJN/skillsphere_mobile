@@ -1,145 +1,140 @@
 # SkillSphere
 
-[License: MIT](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Repo](https://img.shields.io/badge/Repository-SkillSphere-green)](https://github.com/ManasJN/skillsphere_mobile)
 
-SkillSphere is a student growth and faculty engagement platform built for campus communities, with an initial design focus on Jorhat Engineering College (JEC). The system combines a React Native + Expo mobile client with a Node.js + Express backend and MongoDB data storage.
+SkillSphere is a student growth and faculty engagement platform built for educational institutions. The project is currently focused on Jorhat Engineering College (JEC) and supports students in showcasing skills, coding progress, projects, goals, and achievements while enabling faculty to monitor engagement and share announcements.
 
-The repository is split into:
-- `mobile-app/` — the Expo mobile application with TypeScript and Expo Router
-- `server/` — the REST API, authentication, role-based access control, and data models
+## Problem Statement
 
----
+Students often struggle to present academic progress, coding achievements, and project work in a central location. Institutions also need a consistent way for faculty to view student growth, share updates, and support engagement without relying on disconnected spreadsheets or messaging channels.
 
-# Key Features
+## Solution
 
-## Student Features
+SkillSphere provides a mobile-first platform where students can maintain a portfolio, track goals, and share performance insights. Faculty gain access to a dedicated dashboard for student monitoring, announcement management, and engagement analytics. The system combines a React Native mobile experience with a Node.js API and MongoDB backend.
 
-- Authentication with OTP verification and JWT session handling
-- Student profile and portfolio system for academic and coding credentials
-- QR-based profile sharing for quick access and presentations
-- GitHub integration for importing public profile data and repository stats
-- LeetCode statistics support for coding progress and achievement tracking
-- Leaderboard and ranking system based on coding and portfolio metrics
-- Goals and achievements tracking with configurable student milestones
-- Opportunities and announcements feed for campus updates
+## Features
 
-## Faculty Features
+### Authentication
 
-- Faculty login with role-based access control
-- Faculty dashboard for student monitoring and aggregate progress
-- Read-only student visibility and portfolio inspection
-- Shared announcement system for campus-wide messaging
-- Faculty announcement publishing and admin visibility in the backend
+- Student registration and login
+- OTP verification for student onboarding
+- Secure logout and session handling
+- Faculty registration and login
+- Faculty registration protected by an institutional access code
 
----
+### Student Experience
 
-# Tech Stack
+- Profile management and portfolio builder
+- Profile picture upload and QR-based sharing
+- GitHub integration for public profile data
+- LeetCode integration for coding progress tracking
+- Goal setting and achievement tracking
+- Opportunities feed for relevant programs and resources
+- Announcements feed for campus updates
 
-## Frontend
+### Faculty Experience
 
-- React Native
-- Expo
-- Expo Router
-- TypeScript
+- Faculty dashboard with engagement summaries
+- Student directory and search
+- Detailed student progress views
+- Dashboard statistic cards for quick insights
+- Announcement publishing and management
+- Student progress monitoring across portfolios and activities
 
-## Backend
+### Analytics & Engagement
 
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
+- Leaderboard for student engagement
+- XP system for progress measurement
+- Activity tracking across student actions
+- Coding progress monitoring through integrated services
 
----
+## Screenshots
 
-# Architecture Overview
+Add screenshots here
 
-- Role-based routing: the mobile client identifies `student` and `faculty` roles and routes users to separate tab navigators and dashboard flows.
-- Student and faculty dashboards: students see progress, goals, and portfolio entry points; faculty users access student summaries, details, and announcement controls.
-- Shared announcements architecture: announcements are stored in MongoDB, exposed via `/api/announcements`, and rendered for authenticated users across the student and faculty experience.
-- Portfolio ecosystem: portfolio data is assembled from user profile fields, skills, projects, coding stats, and share links, then delivered via QR and deep link sharing.
+## Tech Stack
 
----
+| Layer | Technology |
+| --- | --- |
+| Mobile App | React Native, Expo, Expo Router, TypeScript |
+| Backend API | Node.js, Express.js |
+| Database | MongoDB, Mongoose |
 
-# Screenshots Section
+## System Architecture
 
-## Login Screen
-(Add screenshot here)
+SkillSphere uses a mobile-first architecture connected to a REST API and document database:
 
-## Student Dashboard
-(Add screenshot here)
+React Native App
+↓
+Express API
+↓
+MongoDB
 
-## Faculty Dashboard
-(Add screenshot here)
+- The mobile app handles authentication, student and faculty workflows, and UI rendering.
+- The Express API manages routes, authentication, access control, and data validation.
+- MongoDB stores users, portfolios, achievements, announcements, and analytics data.
 
-## Portfolio Screen
-(Add screenshot here)
+## Installation
 
----
-
-# Installation
-
-## Prerequisites
+### Prerequisites
 
 - Node.js 18+ and npm
-- MongoDB instance (local or Atlas)
-- Expo CLI installed or use `npx expo`
+- MongoDB (local or Atlas)
+- Expo CLI or `npx expo`
 
-## Backend setup
+### Backend setup
 
 ```bash
 cd server
 npm install
 cp .env.example .env
-# Edit server/.env to set MONGO_URI, JWT_SECRET, JWT_REFRESH_SECRET, EMAIL_USER and EMAIL_PASS
+# Update server/.env with required values
 npm run dev
 ```
 
-## Mobile app setup
+### Frontend setup
 
 ```bash
 cd mobile-app
 npm install
 cp .env.example .env
-# Edit mobile-app/.env and set EXPO_PUBLIC_API_URL to the backend API base URL
+# Update mobile-app/.env with EXPO_PUBLIC_API_URL to point to the backend API
 npm run start
 ```
 
-## Notes
+### Environment variables
 
-- On a physical device, set `EXPO_PUBLIC_API_URL` to your machine’s local network address, for example `http://192.168.x.x:5000/api`.
-- The mobile client and backend are separate projects and should be started independently.
-- The Expo app uses `expo-router` and expects the backend API to be running before signing in.
+- `MONGO_URI` — MongoDB connection string
+- `JWT_SECRET` — JWT signing key
+- `JWT_REFRESH_SECRET` — JWT refresh token key
+- `EMAIL_USER` / `EMAIL_PASS` — email credentials for OTP delivery
+- `EXPO_PUBLIC_API_URL` — backend API base URL used by the mobile app
 
----
+> When testing on a physical device, use your development machine’s local network address for `EXPO_PUBLIC_API_URL`, for example `http://192.168.x.x:5000/api`.
 
-# Project Status
+## Faculty Registration Protection
 
-Current Status:
-- Demo-ready prototype
+Faculty registration requires an institutional access code. This access code is validated on the backend before allowing faculty account creation. The code is stored securely on the server side and is not included in the mobile client or public repository.
 
-Implemented:
-- student ecosystem with profile, goals, and portfolio features
-- faculty ecosystem with role-based access and student visibility
-- shared announcements for campus messaging
-- OTP-based authentication and session management
-- portfolio system with shareable links and QR codes
-- leaderboard and coding progress tracking
+## Future Scope
 
-Future Scope:
-- faculty verification workflow
-- multi-college support and campus separation
-- advanced analytics and dashboard reporting
-- push notifications and richer notification delivery
+- Push notifications for announcements and activity alerts
+- Advanced analytics for student engagement and performance
+- Multi-college support with institution-specific workflows
+- Placement tracking and internship support
+- Faculty verification workflow with approval controls
 
----
+## Project Status
 
-# Team / Author
+The project is currently in active development and is demo-ready. Core student and faculty workflows are implemented, with additional analytics and verification features planned for future releases.
+
+## Contributors
 
 - Manas Jyoti Nath
 
----
+> Add contributors from the repository history if available.
 
-**Repository structure**
+## License
 
-- `mobile-app/` — Expo mobile app, UI components, hooks, and API client
-- `server/` — Express API, controllers, routes, models, and backend services
+This project is released under the MIT License. See `LICENSE` for details.
