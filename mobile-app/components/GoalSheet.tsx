@@ -32,6 +32,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Radius, Spacing, Typography } from '@/lib/theme';
 import { Divider, ErrorBanner, Row } from '@/components/ui';
@@ -69,6 +70,7 @@ type GoalSheetProps = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function GoalSheet({ visible, onClose, onSave, goal }: GoalSheetProps) {
+  const insets = useSafeAreaInsets();
   const isEdit = !!goal;
 
   // Form state
@@ -188,19 +190,12 @@ export function GoalSheet({ visible, onClose, onSave, goal }: GoalSheetProps) {
         style={S.root}>
 
         {/* ── Sheet header ── */}
-        <View style={S.header}>
+        <View style={[S.header, { paddingTop: insets.top }]}>
           <Pressable onPress={onClose} hitSlop={12} style={S.headerBtn}>
             <Ionicons name="close" size={20} color={Colors.text2} />
           </Pressable>
           <Text style={S.headerTitle}>{isEdit ? 'Edit goal' : 'New goal'}</Text>
-          <Pressable
-            disabled={saving}
-            onPress={handleSave}
-            style={[S.saveBtn, saving && S.saveBtnOff]}>
-            {saving
-              ? <ActivityIndicator size="small" color={Colors.bg1} />
-              : <Text style={S.saveTxt}>Save</Text>}
-          </Pressable>
+          <View style={S.headerPlaceholder} />
         </View>
 
         <Divider />
@@ -378,6 +373,19 @@ export function GoalSheet({ visible, onClose, onSave, goal }: GoalSheetProps) {
           </View>
 
         </ScrollView>
+
+        {/* ── Sheet footer with Save button ── */}
+        <Divider />
+        <View style={[S.footer, { paddingBottom: insets.bottom }]}>
+          <Pressable
+            disabled={saving}
+            onPress={handleSave}
+            style={[S.saveButtonLarge, saving && S.saveButtonLargeOff]}>
+            {saving
+              ? <ActivityIndicator size="small" color={Colors.bg1} />
+              : <Text style={S.saveButtonText}>Save Goal</Text>}
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -410,7 +418,8 @@ const S = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   headerBtn:   { padding: 4 },
-  headerTitle: { ...Typography.h4, color: Colors.text0 },
+  headerTitle: { ...Typography.h4, color: Colors.text0, flex: 1, textAlign: 'center' },
+  headerPlaceholder: { width: 28, height: 28 },
   saveBtn: {
     alignItems: 'center',
     backgroundColor: Colors.accent,
@@ -503,4 +512,25 @@ const S = StyleSheet.create({
 
   // XP hint
   xpHint: { ...Typography.bodyXs, color: Colors.accent, fontWeight: '600' as const },
+
+  // Footer with Save button
+  footer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    backgroundColor: Colors.bg1,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border1,
+  },
+  saveButtonLarge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.lg,
+    minHeight: 48,
+  },
+  saveButtonLargeOff: { opacity: 0.6 },
+  saveButtonText: { ...Typography.ui, color: Colors.bg1, fontWeight: '700' as const },
 });
